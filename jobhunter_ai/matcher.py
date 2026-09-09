@@ -49,6 +49,19 @@ def _evidence_for(profile: Profile, term: str) -> list[str]:
 
 
 def match_job(profile: Profile, job: Job, threshold: float = 60.0) -> MatchResult:
+    if not any((job.required_skills, job.preferred_skills, job.keywords)):
+        return MatchResult(
+            job_id=job.id,
+            score=0.0,
+            compatible=False,
+            matched_required=[],
+            missing_required=[],
+            matched_preferred=[],
+            missing_preferred=[],
+            matched_keywords=[],
+            evidence_by_skill={},
+        )
+
     searchable = profile.searchable_text()
     matched_required = [term for term in job.required_skills if _contains(searchable, term)]
     missing_required = [term for term in job.required_skills if term not in matched_required]

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
+import re
+import unicodedata
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlopen
@@ -11,6 +13,19 @@ from .base import JobSource
 
 class RssJobSource(JobSource):
     """Load job listings from an RSS or Atom feed."""
+
+    _INTERNSHIP_TERMS = (
+        "internship program",
+        "internship",
+        "intern",
+        "practica",
+        "practicas",
+        "becario",
+        "becaria",
+    )
+    _TRAINEE_TERMS = ("trainee",)
+    _PART_TIME_TERMS = ("part-time", "medio tiempo")
+    _STUDENT_TERMS = ("estudiante",)
 
     def __init__(
         self,
@@ -53,6 +68,7 @@ class RssJobSource(JobSource):
         company = self._find_text(entry, {"company", "employer", "organization", "publisher", "author"})
         location = self._find_text(entry, {"location", "job_location", "city", "region"})
         description = self._find_text(entry, {"description", "summary", "content", "encoded"})
+        employment_type, schedule = self._infer_metadata(title, description)
 
         return Job(
             id=entry_id,
@@ -65,6 +81,41 @@ class RssJobSource(JobSource):
             required_skills=[],
             preferred_skills=[],
             keywords=[],
+            employment_type=employment_type,
+            schedule=schedule,
+        )
+
+    @classmethod
+    def _infer_metadata(cls, title: str, description: str) -> tuple[str, str]:
+        text = cls._normalize_for_matching(f"{title} {description}")
+        employment_type = "unknown"
+        schedule = "unknown"
+
+        if cls._contains_any_explicit_term(text, cls._INTERNSHIP_TERMS):
+            employment_type = "internship"
+        elif cls._contains_any_explicit_term(text, cls._TRAINEE_TERMS):
+            employment_type = "trainee"
+        elif cls._contains_any_explicit_term(text, cls._STUDENT_TERMS):
+            employment_type = "student"
+
+        if cls._contains_any_explicit_term(text, cls._PART_TIME_TERMS):
+            schedule = "part-time"
+            if employment_type == "unknown":
+                employment_type = "part-time"
+
+        return employment_type, schedule
+
+    @staticmethod
+    def _normalize_for_matching(value: str) -> str:
+        decomposed = unicodedata.normalize("NFKD", value.lower())
+        without_accents = "".join(char for char in decomposed if not unicodedata.combining(char))
+        return re.sub(r"\s+", " ", without_accents).strip()
+
+    @classmethod
+    def _contains_any_explicit_term(cls, text: str, terms: tuple[str, ...]) -> bool:
+        return any(
+            re.search(rf"(?<!\w){re.escape(cls._normalize_for_matching(term))}(?!\w)", text)
+            for term in terms
         )
 
     @staticmethod

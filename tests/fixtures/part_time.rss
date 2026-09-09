@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Example Jobs</title>
+    <item>
+      <guid>rss-job-part-time-001</guid>
+      <title>Security Analyst</title>
+      <link>https://example.com/jobs/rss-job-part-time-001</link>
+      <description>Oportunidad de medio tiempo para apoyar operaciones de seguridad.</description>
+    </item>
+  </channel>
+</rss>
