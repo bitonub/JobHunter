@@ -1,0 +1,36 @@
+{
+  "jobs": [
+    {
+      "id": 1001,
+      "jobSlug": "security-intern-1001",
+      "jobTitle": "Security Intern",
+      "companyName": "Example Security",
+      "jobGeo": "Worldwide",
+      "url": "https://example.com/jobs/security-intern-1001",
+      "jobExcerpt": "Support security operations.",
+      "jobType": ["internship"],
+      "jobLevel": "Entry-level"
+    },
+    {
+      "jobSlug": "python-developer-part-time",
+      "jobTitle": "Python Developer",
+      "companyName": "Example Labs",
+      "jobGeo": "Americas",
+      "url": "https://example.com/jobs/python-developer-part-time",
+      "jobExcerpt": "Build Python automation tools.",
+      "jobType": ["part-time"],
+      "jobLevel": "Mid-level"
+    },
+    {
+      "id": 1003,
+      "jobSlug": "backend-engineer-full-time",
+      "jobTitle": "Backend Engineer",
+      "companyName": "Example Cloud",
+      "jobGeo": "Anywhere",
+      "url": "https://example.com/jobs/backend-engineer-full-time",
+      "jobExcerpt": "Build distributed backend services.",
+      "jobType": ["full-time"],
+      "jobLevel": "Senior"
+    }
+  ]
+}

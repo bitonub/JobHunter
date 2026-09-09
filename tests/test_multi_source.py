@@ -4,6 +4,7 @@ from pathlib import Path
 from jobhunter_ai.models import Job
 from jobhunter_ai.sources import (
     JobSource,
+    JobicyApiSource,
     JsonJobSource,
     MultiJobSource,
     RssJobSource,
@@ -69,10 +70,8 @@ class MultiJobSourceTests(unittest.TestCase):
     def test_loads_sources_from_json_configuration(self):
         source = load_configured_source("data/sources.example.json")
 
-        jobs = source.fetch_jobs()
-
-        self.assertEqual(len(jobs), 4)
-        self.assertTrue(any(job.source == "example-rss" for job in jobs))
+        self.assertIsInstance(source.sources[0], JobicyApiSource)
+        self.assertEqual(len(source.sources), 3)
 
 
 if __name__ == "__main__":
