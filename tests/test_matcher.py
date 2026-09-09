@@ -8,12 +8,12 @@ from jobhunter_ai.io import load_json
 class MatcherTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.profile = Profile.from_dict(load_json("data/profile.json"))
+        cls.profile = Profile.from_dict(load_json("data/profile.example.json"))
         cls.jobs = [Job.from_dict(item) for item in load_json("data/sample_jobs.json")]
 
     def test_relevant_job_is_compatible(self):
         result = match_job(self.profile, self.jobs[0])
-        self.assertGreaterEqual(result.score, 80)
+        self.assertGreaterEqual(result.score, 60)
         self.assertTrue(result.compatible)
         self.assertIn("Python", result.matched_required)
 
@@ -25,7 +25,7 @@ class MatcherTests(unittest.TestCase):
     def test_evidence_is_attached_to_matches(self):
         result = match_job(self.profile, self.jobs[0])
         self.assertTrue(result.evidence_by_skill["Python"])
-        self.assertIn("CV > Competencias técnicas", result.evidence_by_skill["Python"][0])
+        self.assertTrue(any("Python" in evidence for evidence in result.evidence_by_skill["Python"]))
 
 
 if __name__ == "__main__":

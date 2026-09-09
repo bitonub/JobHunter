@@ -8,12 +8,12 @@ from jobhunter_ai.tailor import build_tailored_cv
 
 class TailorTests(unittest.TestCase):
     def test_tailored_cv_uses_only_profile_content(self):
-        profile = Profile.from_dict(load_json("data/profile.json"))
+        profile = Profile.from_dict(load_json("data/profile.example.json"))
         job = Job.from_dict(load_json("data/sample_jobs.json")[0])
         result = match_job(profile, job)
         tailored = build_tailored_cv(profile, job, result)
 
-        self.assertIn("Gilberto Morales Medina", tailored.markdown)
+        self.assertIn("Candidate Example", tailored.markdown)
         self.assertIn("Python", tailored.markdown)
         self.assertNotIn("Kubernetes", tailored.markdown)
         self.assertTrue(any("Compatibilidad calculada" in item for item in tailored.selected_evidence["job"]))
