@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Example Atom Jobs</title>
+  <entry>
+    <id>tag:example.com,2026:atom-job-001</id>
+    <title>Atom Security Trainee</title>
+    <link rel="alternate" href="https://example.com/jobs/atom-job-001" />
+    <summary>Support security operations.</summary>
+    <author><name>Example Atom Company</name></author>
+    <location>Remote</location>
+  </entry>
+</feed>

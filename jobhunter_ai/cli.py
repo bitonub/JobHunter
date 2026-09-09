@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .cv_parser import extract_text_from_pdf
 from .pipeline import run_pipeline
-from .sources import JsonJobSource
+from .sources import JsonJobSource, RssJobSource
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -18,7 +18,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     run = subparsers.add_parser("run", help="Analiza vacantes y genera CVs adaptados")
     run.add_argument("--profile", required=True, help="Perfil estructurado derivado del CV")
-    run.add_argument("--jobs", required=True, help="Vacantes en JSON")
+    jobs_source = run.add_mutually_exclusive_group(required=True)
+    jobs_source.add_argument("--jobs", help="Vacantes en JSON")
+    jobs_source.add_argument("--rss-url", help="URL de un feed RSS o Atom")
     run.add_argument("--output", default="output")
     run.add_argument("--threshold", type=float, default=60.0)
     run.add_argument("--preferences", default="data/preferences.json", help="Preferencias de búsqueda en JSON")
@@ -35,9 +37,10 @@ def main() -> None:
         print(f"Texto extraído en: {destination}")
         return
 
+    source = RssJobSource(args.rss_url) if args.rss_url else JsonJobSource(args.jobs)
     report = run_pipeline(
         args.profile,
-        JsonJobSource(args.jobs),
+        source,
         args.output,
         threshold=args.threshold,
         preferences_path=args.preferences,

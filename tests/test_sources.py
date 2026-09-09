@@ -1,7 +1,11 @@
 import unittest
+from pathlib import Path
 
 from jobhunter_ai.models import Job
-from jobhunter_ai.sources import JobSource, JsonJobSource
+from jobhunter_ai.sources import JobSource, JsonJobSource, RssJobSource
+
+
+FIXTURE_DIR = Path(__file__).parent / "fixtures"
 
 
 class InMemoryJobSource(JobSource):
@@ -39,6 +43,43 @@ class JsonJobSourceTests(unittest.TestCase):
         self.assertEqual(len(jobs), 3)
         self.assertTrue(all(isinstance(job, Job) for job in jobs))
         self.assertEqual(jobs[0].id, "analista-ciberseguridad-jr-001")
+
+
+class RssJobSourceTests(unittest.TestCase):
+    def test_loads_valid_rss_feed(self):
+        jobs = RssJobSource(FIXTURE_DIR / "jobs.rss").fetch_jobs()
+
+        self.assertEqual(len(jobs), 1)
+        self.assertIsInstance(jobs[0], Job)
+        self.assertEqual(jobs[0].id, "rss-job-001")
+        self.assertEqual(jobs[0].title, "Security Intern")
+        self.assertEqual(jobs[0].company, "Example Security")
+        self.assertEqual(jobs[0].location, "Monterrey")
+        self.assertEqual(jobs[0].url, "https://example.com/jobs/rss-job-001")
+        self.assertEqual(jobs[0].description, "Support security monitoring and reporting.")
+        self.assertEqual(jobs[0].source, "rss")
+
+    def test_supports_atom_feed(self):
+        jobs = RssJobSource(FIXTURE_DIR / "jobs.atom").fetch_jobs()
+
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].id, "tag:example.com,2026:atom-job-001")
+        self.assertEqual(jobs[0].company, "Example Atom Company")
+        self.assertEqual(jobs[0].url, "https://example.com/jobs/atom-job-001")
+
+    def test_handles_incomplete_entry(self):
+        jobs = RssJobSource(FIXTURE_DIR / "incomplete.rss").fetch_jobs()
+
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].id, "rss-entry-1")
+        self.assertEqual(jobs[0].title, "Incomplete listing")
+        self.assertEqual(jobs[0].company, "No especificada")
+        self.assertEqual(jobs[0].location, "No especificada")
+        self.assertEqual(jobs[0].url, "")
+        self.assertEqual(jobs[0].description, "")
+
+    def test_returns_no_jobs_for_empty_feed(self):
+        self.assertEqual(RssJobSource(FIXTURE_DIR / "empty.rss").fetch_jobs(), [])
 
 
 if __name__ == "__main__":
