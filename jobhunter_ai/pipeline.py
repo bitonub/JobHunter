@@ -7,19 +7,20 @@ from pathlib import Path
 from .filters import evaluate_job
 from .io import load_json, write_json
 from .matcher import match_job
-from .models import Job, Profile
+from .models import Profile
+from .sources import JobSource
 from .tailor import build_tailored_cv
 
 
 def run_pipeline(
     profile_path: str,
-    jobs_path: str,
+    jobs_source: JobSource,
     output_dir: str,
     threshold: float = 60.0,
     preferences_path: str | None = None,
 ) -> dict:
     profile = Profile.from_dict(load_json(profile_path))
-    jobs = [Job.from_dict(item) for item in load_json(jobs_path)]
+    jobs = jobs_source.fetch_jobs()
     preferences = load_json(preferences_path) if preferences_path else {
         "allowed_employment_types": ["internship", "part-time", "trainee", "apprenticeship", "student"],
         "allow_unknown_employment_type": False,
