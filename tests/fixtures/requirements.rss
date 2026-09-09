@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Requirements Jobs</title>
+    <item>
+      <guid>rss-requirements-001</guid>
+      <title>Security Intern</title>
+      <link>https://example.com/jobs/rss-requirements-001</link>
+      <description>Required: Python. Preferred: SQL.</description>
+    </item>
+  </channel>
+</rss>
