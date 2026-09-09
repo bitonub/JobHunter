@@ -23,6 +23,7 @@ def build_parser() -> argparse.ArgumentParser:
     jobs_source.add_argument("--rss-url", help="URL de un feed RSS o Atom")
     run.add_argument("--output", default="output")
     run.add_argument("--threshold", type=float, default=60.0)
+    run.add_argument("--job-terms", default="data/job_terms.json", help="Catálogo de términos técnicos en JSON")
     run.add_argument("--preferences", default="data/preferences.json", help="Preferencias de búsqueda en JSON")
     return parser
 
@@ -44,6 +45,7 @@ def main() -> None:
         args.output,
         threshold=args.threshold,
         preferences_path=args.preferences,
+        job_terms_path=args.job_terms,
     )
     print(f"Vacantes analizadas: {report['total_jobs']}")
     print(f"Vacantes descartadas por filtros: {report['filtered_out_jobs']}")

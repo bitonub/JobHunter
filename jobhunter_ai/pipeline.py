@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .filters import evaluate_job
 from .io import load_json, write_json
+from .job_requirements import extract_job_requirements
 from .matcher import match_job
 from .models import Profile
 from .sources import JobSource
@@ -18,6 +19,7 @@ def run_pipeline(
     output_dir: str,
     threshold: float = 60.0,
     preferences_path: str | None = None,
+    job_terms_path: str | None = None,
 ) -> dict:
     profile = Profile.from_dict(load_json(profile_path))
     jobs = jobs_source.fetch_jobs()
@@ -31,7 +33,8 @@ def run_pipeline(
 
     alerts = []
     filtered_out = []
-    for job in jobs:
+    for raw_job in jobs:
+        job = extract_job_requirements(raw_job, terms_path=job_terms_path)
         filter_result = evaluate_job(job, preferences)
         if not filter_result.accepted:
             filtered_out.append({"job": asdict(job), "filter": filter_result.to_dict()})
