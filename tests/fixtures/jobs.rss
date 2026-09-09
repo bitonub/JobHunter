@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Example Jobs</title>
+    <item>
+      <guid>rss-job-001</guid>
+      <title>Security Intern</title>
+      <company>Example Security</company>
+      <location>Monterrey</location>
+      <link>https://example.com/jobs/rss-job-001</link>
+      <description>Support security monitoring and reporting.</description>
+    </item>
+  </channel>
+</rss>
