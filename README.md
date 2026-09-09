@@ -90,6 +90,23 @@ de `data/sources.example.json` y conservar el enlace original de cada vacante.
 La API no requiere API key. El sistema debe consultar Jobicy como máximo una
 vez por hora; este adaptador no implementa programación periódica ni caché.
 
+## Ejecución remota con GitHub Actions
+
+El workflow `Remote Job Search` puede ejecutarse manualmente o cada seis horas.
+Usa Jobicy mediante `data/sources.example.json`, genera los resultados de forma
+temporal y envía por Telegram las vacantes compatibles junto con su CV adaptado.
+`profile.json`, el PDF y `output/` no se publican como artifacts y se eliminan al
+terminar la ejecución.
+
+Configura estos tres secretos del repositorio en **Settings > Secrets and
+variables > Actions**:
+
+- `PROFILE_JSON`: contenido completo del perfil local `data/profile.json`.
+- `TELEGRAM_BOT_TOKEN`: token del bot de Telegram.
+- `TELEGRAM_CHAT_ID`: identificador del chat que recibirá las alertas.
+
+No guardes los valores en el repositorio ni los incluyas en archivos de workflow.
+
 ## Reglas de integridad
 
 - No se agregan habilidades, experiencia, estudios o certificaciones que no estén en el perfil derivado del CV.
