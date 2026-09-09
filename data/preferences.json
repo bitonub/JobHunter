@@ -1,0 +1,17 @@
+{
+  "allowed_employment_types": [
+    "internship",
+    "part-time",
+    "trainee",
+    "apprenticeship",
+    "student"
+  ],
+  "allow_unknown_employment_type": false,
+  "excluded_keywords": [
+    "senior",
+    "sr.",
+    "lead",
+    "manager",
+    "director"
+  ]
+}

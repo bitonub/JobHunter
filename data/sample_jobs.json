@@ -1,0 +1,47 @@
+[
+  {
+    "id": "analista-ciberseguridad-jr-001",
+    "title": "Analista Jr. de Ciberseguridad",
+    "company": "SecureNorth",
+    "location": "Monterrey, N.L. / Híbrido",
+    "url": "https://example.com/jobs/analista-ciberseguridad-jr-001",
+    "source": "demo",
+    "employment_type": "internship",
+    "schedule": "part-time",
+    "experience_level": "student",
+    "description": "Apoyo en monitoreo, análisis de vulnerabilidades, redes y automatización de tareas de seguridad.",
+    "required_skills": ["Python", "SQL", "Windows 11", "Linux", "TCP/IP", "Nmap"],
+    "preferred_skills": ["Microsoft Azure", "análisis de vulnerabilidades", "análisis de incidentes"],
+    "keywords": ["ciberseguridad", "automatización", "redes", "seguridad"]
+  },
+  {
+    "id": "soporte-ti-junior-002",
+    "title": "Soporte TI Junior",
+    "company": "Northwind Retail",
+    "location": "Monterrey, N.L.",
+    "url": "https://example.com/jobs/soporte-ti-junior-002",
+    "source": "demo",
+    "employment_type": "part-time",
+    "schedule": "part-time",
+    "experience_level": "junior",
+    "description": "Atención de incidencias, mantenimiento de equipos, soporte a usuarios y herramientas de productividad.",
+    "required_skills": ["Windows 11", "Microsoft 365", "mantenimiento preventivo", "sistema de tickets"],
+    "preferred_skills": ["Linux", "Microsoft Azure", "redes"],
+    "keywords": ["soporte técnico", "hardware", "incidencias"]
+  },
+  {
+    "id": "software-engineer-003",
+    "title": "Software Engineer",
+    "company": "CloudScale",
+    "location": "Remoto",
+    "url": "https://example.com/jobs/software-engineer-003",
+    "source": "demo",
+    "employment_type": "full-time",
+    "schedule": "full-time",
+    "experience_level": "senior",
+    "description": "Desarrollo de servicios web distribuidos y aplicaciones frontend modernas.",
+    "required_skills": ["Java", "Kubernetes", "React", "Docker"],
+    "preferred_skills": ["TypeScript", "microservicios"],
+    "keywords": ["software engineer", "frontend", "servicios web"]
+  }
+]

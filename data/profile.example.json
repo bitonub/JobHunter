@@ -1,0 +1,45 @@
+{
+  "name": "Candidate Example",
+  "location": "Monterrey, Nuevo León, México",
+  "contact": {
+    "phone": "+52 00 0000 0000",
+    "email": "candidate@example.com",
+    "github": "github.com/example",
+    "credly": "credly.com/users/example"
+  },
+  "summary": "Estudiante de Seguridad en TI con experiencia en soporte técnico, sistemas Windows/Linux, redes y automatización con Python/SQL.",
+  "education": [
+    {
+      "school": "Universidad Example",
+      "degree": "Licenciatura en Seguridad en Tecnologías de la Información",
+      "dates": "2023 - Actualidad"
+    }
+  ],
+  "experience": [
+    {
+      "company": "Empresa Example",
+      "title": "Auxiliar de Sistemas",
+      "dates": "2025 - 2026",
+      "location": "Monterrey, México",
+      "bullets": [
+        "Brindé soporte técnico en Windows y documenté incidencias mediante un sistema de tickets.",
+        "Desarrollé automatizaciones en Python para generar reportes y reducir tareas manuales."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Proyecto de automatización Example",
+      "description": "Automatización de reportes con Python y SQL.",
+      "keywords": ["Python", "SQL", "automatización"]
+    }
+  ],
+  "certifications": ["Certificación Example"],
+  "skills": {
+    "Ciberseguridad": ["análisis de vulnerabilidades"],
+    "Redes": ["TCP/IP", "Nmap"],
+    "Bases de datos y programación": ["SQL", "Python", "automatización básica"],
+    "Sistemas": ["Windows 11", "Linux"]
+  },
+  "evidence": {}
+}
