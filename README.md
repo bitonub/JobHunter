@@ -83,6 +83,13 @@ Pruebas:
 python -m unittest discover -s tests -v
 ```
 
+## Jobicy
+
+JobHunter puede consultar la API pública de Jobicy mediante la configuración
+de `data/sources.example.json` y conservar el enlace original de cada vacante.
+La API no requiere API key. El sistema debe consultar Jobicy como máximo una
+vez por hora; este adaptador no implementa programación periódica ni caché.
+
 ## Reglas de integridad
 
 - No se agregan habilidades, experiencia, estudios o certificaciones que no estén en el perfil derivado del CV.
