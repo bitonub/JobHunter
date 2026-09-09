@@ -1,0 +1,11 @@
+[
+  {
+    "type": "rss",
+    "path": "tests/fixtures/jobs.rss",
+    "source": "example-rss"
+  },
+  {
+    "type": "json",
+    "path": "data/sample_jobs.json"
+  }
+]
