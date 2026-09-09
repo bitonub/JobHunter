@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .cv_parser import extract_text_from_pdf
 from .pipeline import run_pipeline
+from .sources import JsonJobSource
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -36,7 +37,7 @@ def main() -> None:
 
     report = run_pipeline(
         args.profile,
-        args.jobs,
+        JsonJobSource(args.jobs),
         args.output,
         threshold=args.threshold,
         preferences_path=args.preferences,
