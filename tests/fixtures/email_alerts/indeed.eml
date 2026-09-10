@@ -1,0 +1,19 @@
+From: Indeed Job Alerts <alerts@indeed.example>
+To: candidate@example.test
+Subject: Job alert: Junior Support Intern at Northstar Systems
+Date: Wed, 10 Sep 2026 08:05:00 -0600
+Message-ID: <indeed-alert-001@indeed.example>
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+<!doctype html>
+<html>
+  <body>
+    <h1>Recommended opportunity</h1>
+    <p>Location: Remote</p>
+    <p>Preferred: Windows and technical support.</p>
+    <p><a href="https://jobs.indeed.example/viewjob?id=synthetic-001">View job</a></p>
+    <p><a href="https://account.indeed.example/preferences">Alert preferences</a></p>
+  </body>
+</html>

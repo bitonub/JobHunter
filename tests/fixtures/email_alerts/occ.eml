@@ -1,0 +1,16 @@
+From: Alertas OCC <alerts@occ.example>
+To: candidate@example.test
+Subject: Alerta de empleo: Practicante de Ciberseguridad
+Date: Wed, 10 Sep 2026 08:00:00 -0600
+Message-ID: <occ-alert-001@occ.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Vacante: Practicante de Ciberseguridad
+Empresa: Laboratorio Digital Ejemplo
+Ubicación: Monterrey, Nuevo León
+Modalidad: Presencial
+Requisitos: Python y Linux.
+Consulta la vacante y postúlate:
+https://jobs.occ.example/vacantes/security-intern-001

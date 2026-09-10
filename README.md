@@ -90,6 +90,24 @@ de `data/sources.example.json` y conservar el enlace original de cada vacante.
 La API no requiere API key. El sistema debe consultar Jobicy como máximo una
 vez por hora; este adaptador no implementa programación periódica ni caché.
 
+## Alertas locales por correo
+
+JobHunter puede convertir mensajes RFC 822 (`.eml`) sintéticos o exportados
+localmente en vacantes, sin conectarse a Gmail ni usar credenciales:
+
+```bash
+python -m jobhunter_ai.cli run \
+  --profile data/profile.json \
+  --email-alerts ruta/a/alertas \
+  --preferences data/preferences.json \
+  --output output
+```
+
+También puede declararse dentro de una configuración `--sources` con
+`{"type": "email", "path": "ruta/a/alertas", "provider": "opcional"}`.
+La ruta puede ser una carpeta o un único archivo `.eml`. Si no se configura
+`provider`, se utiliza el dominio del remitente.
+
 ## Ejecución remota con GitHub Actions
 
 El workflow `Remote Job Search` puede ejecutarse manualmente o cada seis horas.
