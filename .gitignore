@@ -7,5 +7,6 @@ output/*
 tmp/
 upload/
 data/profile.json
+data/search_preferences.json
 *.pdf
 .env
