@@ -98,12 +98,17 @@ temporal y envía por Telegram las vacantes compatibles junto con su CV adaptado
 `profile.json`, el PDF y `output/` no se publican como artifacts y se eliminan al
 terminar la ejecución.
 
-Configura estos tres secretos del repositorio en **Settings > Secrets and
+Configura estos tres secretos obligatorios del repositorio en **Settings > Secrets and
 variables > Actions**:
 
 - `PROFILE_JSON`: contenido completo del perfil local `data/profile.json`.
 - `TELEGRAM_BOT_TOKEN`: token del bot de Telegram.
 - `TELEGRAM_CHAT_ID`: identificador del chat que recibirá las alertas.
+
+Opcionalmente, configura `SEARCH_PREFERENCES_JSON` con el contenido de tus
+preferencias avanzadas. Durante la ejecución se guarda temporalmente con
+permisos restrictivos y se elimina siempre al finalizar. Si el secreto no está
+configurado, el workflow conserva `data/preferences.json` como configuración.
 
 No guardes los valores en el repositorio ni los incluyas en archivos de workflow.
 

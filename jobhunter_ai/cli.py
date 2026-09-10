@@ -26,6 +26,10 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--threshold", type=float, default=60.0)
     run.add_argument("--job-terms", default="data/job_terms.json", help="Catálogo de términos técnicos en JSON")
     run.add_argument("--preferences", default="data/preferences.json", help="Preferencias de búsqueda en JSON")
+    run.add_argument(
+        "--search-preferences",
+        help="Preferencias avanzadas de búsqueda en JSON; reemplaza --preferences",
+    )
     return parser
 
 
@@ -50,7 +54,7 @@ def main() -> None:
         source,
         args.output,
         threshold=args.threshold,
-        preferences_path=args.preferences,
+        preferences_path=args.search_preferences or args.preferences,
         job_terms_path=args.job_terms,
     )
     print(f"Vacantes analizadas: {report['total_jobs']}")
