@@ -110,6 +110,35 @@ También puede declararse dentro de una configuración `--sources` con
 La ruta puede ser una carpeta o un único archivo `.eml`. Si no se configura
 `provider`, se utiliza el dominio del remitente.
 
+## Gmail por etiqueta (solo lectura)
+
+`GmailLabelJobSource` puede leer únicamente los mensajes de una etiqueta de
+Gmail resuelta por nombre. Por defecto usa `JobHunter/Alertas`, solicita
+exclusivamente el scope `https://www.googleapis.com/auth/gmail.readonly` y no
+envía, elimina, archiva, marca como leído ni modifica mensajes.
+
+```bash
+python -m jobhunter_ai.cli run \
+  --profile data/profile.json \
+  --gmail-token data/gmail_token.json \
+  --gmail-label JobHunter/Alertas \
+  --gmail-allowed-domain occ.example \
+  --gmail-allowed-domain indeed.example,linkedin.example \
+  --gmail-max-messages 50 \
+  --preferences data/preferences.json \
+  --output output
+```
+
+También puede usarse `data/sources.gmail.example.json` con `--sources`. Los
+dominios del ejemplo son sintéticos y deben reemplazarse localmente por los
+proveedores autorizados. El conector descarta cualquier otro dominio y no
+guarda el mensaje raw ni su HTML en archivos o logs.
+
+El siguiente paso será realizar una autorización OAuth única con una aplicación
+de escritorio configurada en Google Cloud. Esta entrega no implementa ese flujo:
+solo lee un token local ya autorizado. `data/gmail_token.json` está excluido de
+Git y nunca debe subirse al repositorio, copiarse a artifacts ni imprimirse.
+
 ## Ejecución remota con GitHub Actions
 
 El workflow `Remote Job Search` puede ejecutarse manualmente o cada seis horas.

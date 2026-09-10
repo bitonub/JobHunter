@@ -1,5 +1,6 @@
 __pycache__/
 *.py[cod]
+*.egg-info/
 .venv/
 .pytest_cache/
 output/*
@@ -8,6 +9,7 @@ tmp/
 upload/
 data/profile.json
 data/email_alerts/
+data/gmail_token.json
 data/search_preferences.json
 *.pdf
 .env

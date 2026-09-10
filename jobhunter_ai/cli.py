@@ -5,7 +5,13 @@ from pathlib import Path
 
 from .cv_parser import extract_text_from_pdf
 from .pipeline import run_pipeline
-from .sources import EmailAlertJobSource, JsonJobSource, RssJobSource, load_configured_source
+from .sources import (
+    EmailAlertJobSource,
+    GmailLabelJobSource,
+    JsonJobSource,
+    RssJobSource,
+    load_configured_source,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -21,8 +27,17 @@ def build_parser() -> argparse.ArgumentParser:
     jobs_source = run.add_mutually_exclusive_group(required=True)
     jobs_source.add_argument("--jobs", help="Vacantes en JSON")
     jobs_source.add_argument("--rss-url", help="URL de un feed RSS o Atom")
-    jobs_source.add_argument("--sources", help="Lista JSON de fuentes RSS/Atom/JSON/email")
+    jobs_source.add_argument("--sources", help="Lista JSON de fuentes RSS/Atom/JSON/email/Gmail")
     jobs_source.add_argument("--email-alerts", help="Archivo .eml o carpeta con alertas por correo")
+    jobs_source.add_argument("--gmail-token", help="Token OAuth local para leer alertas de Gmail")
+    run.add_argument("--gmail-label", default="JobHunter/Alertas", help="Nombre de etiqueta de Gmail")
+    run.add_argument(
+        "--gmail-allowed-domain",
+        action="append",
+        default=[],
+        help="Dominio permitido; puede repetirse o contener valores separados por comas",
+    )
+    run.add_argument("--gmail-max-messages", type=int, default=50, help="Máximo de mensajes de Gmail")
     run.add_argument("--output", default="output")
     run.add_argument("--threshold", type=float, default=60.0)
     run.add_argument("--job-terms", default="data/job_terms.json", help="Catálogo de términos técnicos en JSON")
@@ -50,6 +65,13 @@ def main() -> None:
         source = RssJobSource(args.rss_url)
     elif args.email_alerts:
         source = EmailAlertJobSource(args.email_alerts)
+    elif args.gmail_token:
+        source = GmailLabelJobSource(
+            args.gmail_token,
+            args.gmail_allowed_domain,
+            label_name=args.gmail_label,
+            max_messages=args.gmail_max_messages,
+        )
     else:
         source = JsonJobSource(args.jobs)
     report = run_pipeline(

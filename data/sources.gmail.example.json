@@ -1,0 +1,13 @@
+[
+  {
+    "type": "gmail",
+    "token_path": "data/gmail_token.json",
+    "label": "JobHunter/Alertas",
+    "allowed_sender_domains": [
+      "occ.example",
+      "indeed.example",
+      "linkedin.example"
+    ],
+    "max_messages": 50
+  }
+]

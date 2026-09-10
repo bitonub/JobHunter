@@ -97,37 +97,53 @@ class EmailAlertJobSource(JobSource):
         raise FileNotFoundError(f"email alert path does not exist: {self.path}")
 
     def _read_job(self, path: Path) -> Job:
-        message = BytesParser(policy=policy.default).parsebytes(path.read_bytes())
+        return self.parse_bytes(
+            path.read_bytes(),
+            provider=self.provider,
+            fallback_id=f"email-{path.stem}",
+        )
+
+    @classmethod
+    def parse_bytes(
+        cls,
+        raw_message: bytes,
+        *,
+        provider: str | None = None,
+        fallback_id: str = "email-message",
+    ) -> Job:
+        """Parse an RFC 822 message in memory without creating a temporary file."""
+
+        message = BytesParser(policy=policy.default).parsebytes(raw_message)
         sender = parseaddr(str(message.get("From", "")))[1]
         subject = " ".join(str(message.get("Subject", "")).split())
-        description, links = self._message_content(message)
-        title = self._labeled_value(
+        description, links = cls._message_content(message)
+        title = cls._labeled_value(
             description,
             ("job title", "title", "vacante", "puesto", "position"),
         )
-        company = self._labeled_value(
+        company = cls._labeled_value(
             description,
             ("company", "empresa", "compañía", "employer"),
         )
-        location = self._labeled_value(
+        location = cls._labeled_value(
             description,
             ("location", "ubicación", "ubicacion", "lugar"),
         )
-        subject_title, subject_company = self._subject_details(subject)
+        subject_title, subject_company = cls._subject_details(subject)
         title = title or subject_title
         company = company or subject_company
 
         return Job(
-            id=self._message_id(message, path),
+            id=cls._message_id(message, fallback_id),
             title=title or "No especificado",
             company=company or "No especificada",
             location=location or "No especificada",
-            url=self._application_url(links),
+            url=cls._application_url(links),
             description=description,
             required_skills=[],
             preferred_skills=[],
             keywords=[],
-            source=self._provider(sender),
+            source=cls._provider(sender, provider),
             employment_type="unknown",
             schedule="unknown",
             experience_level="unknown",
@@ -222,12 +238,13 @@ class EmailAlertJobSource(JobSource):
         )
 
     @staticmethod
-    def _message_id(message: Message, path: Path) -> str:
-        raw_id = str(message.get("Message-ID", "")).strip().strip("<>") or f"email-{path.stem}"
-        return re.sub(r"[^A-Za-z0-9._@-]+", "-", raw_id).strip("-") or f"email-{path.stem}"
+    def _message_id(message: Message, fallback_id: str) -> str:
+        raw_id = str(message.get("Message-ID", "")).strip().strip("<>") or fallback_id
+        return re.sub(r"[^A-Za-z0-9._@-]+", "-", raw_id).strip("-") or fallback_id
 
-    def _provider(self, sender: str) -> str:
-        if self.provider:
-            return self.provider
+    @staticmethod
+    def _provider(sender: str, provider: str | None = None) -> str:
+        if provider:
+            return provider.strip()
         domain = sender.rpartition("@")[2].lower()
         return domain or "unknown"

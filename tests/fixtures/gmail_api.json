@@ -1,0 +1,20 @@
+{
+  "labels": [
+    {
+      "id": "Label_JobHunter_Alertas",
+      "name": "JobHunter/Alertas"
+    },
+    {
+      "id": "INBOX",
+      "name": "INBOX"
+    }
+  ],
+  "messages": [
+    {
+      "id": "gmail-synthetic-occ"
+    },
+    {
+      "id": "gmail-synthetic-indeed"
+    }
+  ]
+}
