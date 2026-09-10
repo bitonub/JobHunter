@@ -5,6 +5,7 @@ from pathlib import Path
 from ..io import load_json
 from .base import JobSource
 from .email_alert_source import EmailAlertJobSource
+from .gmail_label_source import GmailLabelJobSource
 from .json_source import JsonJobSource
 from .jobicy_source import JobicyApiSource
 from .multi_source import MultiJobSource
@@ -23,6 +24,19 @@ def load_configured_source(path: str | Path) -> MultiJobSource:
         if not isinstance(definition, dict):
             raise ValueError(f"source #{index} must be a JSON object")
         source_type = str(definition.get("type", "")).strip().lower()
+        if source_type == "gmail":
+            token_path = definition.get("token_path") or definition.get("token")
+            if not token_path:
+                raise ValueError(f"Gmail source #{index} must define 'token_path'")
+            sources.append(
+                GmailLabelJobSource(
+                    token_path,
+                    definition.get("allowed_sender_domains"),
+                    label_name=str(definition.get("label", "JobHunter/Alertas")),
+                    max_messages=int(definition.get("max_messages", 50)),
+                )
+            )
+            continue
         location = definition.get("path") or definition.get("url")
         if not location:
             raise ValueError(f"source #{index} must define 'path' or 'url'")
