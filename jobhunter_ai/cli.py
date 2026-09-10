@@ -12,6 +12,7 @@ from .sources import (
     RssJobSource,
     load_configured_source,
 )
+from .storage import SQLiteJobStateStore
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -39,6 +40,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run.add_argument("--gmail-max-messages", type=int, default=50, help="Máximo de mensajes de Gmail")
     run.add_argument("--output", default="output")
+    run.add_argument("--state-db", help="Base SQLite opcional para historial y deduplicación")
     run.add_argument("--threshold", type=float, default=60.0)
     run.add_argument("--job-terms", default="data/job_terms.json", help="Catálogo de términos técnicos en JSON")
     run.add_argument("--preferences", default="data/preferences.json", help="Preferencias de búsqueda en JSON")
@@ -74,15 +76,23 @@ def main() -> None:
         )
     else:
         source = JsonJobSource(args.jobs)
-    report = run_pipeline(
-        args.profile,
-        source,
-        args.output,
-        threshold=args.threshold,
-        preferences_path=args.search_preferences or args.preferences,
-        job_terms_path=args.job_terms,
-    )
+    state_store = SQLiteJobStateStore(args.state_db) if args.state_db else None
+    try:
+        report = run_pipeline(
+            args.profile,
+            source,
+            args.output,
+            threshold=args.threshold,
+            preferences_path=args.search_preferences or args.preferences,
+            job_terms_path=args.job_terms,
+            state_store=state_store,
+        )
+    finally:
+        if state_store is not None:
+            state_store.close()
     print(f"Vacantes analizadas: {report['total_jobs']}")
+    print(f"Vacantes nuevas: {report['new_jobs']}")
+    print(f"Vacantes vistas anteriormente: {report['previously_seen_jobs']}")
     print(f"Vacantes descartadas por filtros: {report['filtered_out_jobs']}")
     print(f"Vacantes compatibles: {report['compatible_jobs']}")
     diagnostics = report["diagnostics"]

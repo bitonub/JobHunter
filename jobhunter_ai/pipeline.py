@@ -11,6 +11,7 @@ from .matcher import match_job
 from .models import Profile
 from .diagnostics import build_diagnostic_summary
 from .sources import JobSource
+from .storage import JobStateStatus, JobStateStore
 from .tailor import build_tailored_cv
 
 
@@ -21,6 +22,7 @@ def run_pipeline(
     threshold: float = 60.0,
     preferences_path: str | None = None,
     job_terms_path: str | None = None,
+    state_store: JobStateStore | None = None,
 ) -> dict:
     profile = Profile.from_dict(load_json(profile_path))
     jobs = jobs_source.fetch_jobs()
@@ -34,11 +36,30 @@ def run_pipeline(
 
     alerts = []
     filtered_out = []
+    new_jobs = 0
+    previously_seen_jobs = 0
+    skipped_alerted_jobs = 0
     for raw_job in jobs:
         job = extract_job_requirements(raw_job, terms_path=job_terms_path)
+        if state_store is None:
+            new_jobs += 1
+        else:
+            stored_state = state_store.get(job)
+            if stored_state is None:
+                new_jobs += 1
+                state_store.record(job, JobStateStatus.SEEN)
+            else:
+                previously_seen_jobs += 1
+                if stored_state.status == JobStateStatus.ALERTED.value:
+                    skipped_alerted_jobs += 1
+                    continue
+                state_store.record(job, stored_state.status, stored_state.score)
+
         filter_result = evaluate_job(job, preferences)
         if not filter_result.accepted:
             filtered_out.append({"job": asdict(job), "filter": filter_result.to_dict()})
+            if state_store is not None:
+                state_store.record(job, JobStateStatus.DISCARDED)
             continue
         result = match_job(profile, job, threshold=threshold)
         record = {
@@ -47,18 +68,25 @@ def run_pipeline(
             "filter": filter_result.to_dict(),
         }
         if result.compatible:
+            if state_store is not None:
+                state_store.record(job, JobStateStatus.COMPATIBLE, result.score)
             tailored = build_tailored_cv(profile, job, result)
             cv_path = output / f"cv_adaptado_{job.id}.md"
             cv_path.write_text(tailored.markdown, encoding="utf-8")
             record["tailored_cv_path"] = str(cv_path)
             record["traceability"] = tailored.selected_evidence
+        elif state_store is not None:
+            state_store.record(job, JobStateStatus.REVIEWABLE, result.score)
         alerts.append(record)
 
     report = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "threshold": threshold,
         "total_jobs": len(jobs),
-        "eligible_jobs": len(jobs) - len(filtered_out),
+        "new_jobs": new_jobs,
+        "previously_seen_jobs": previously_seen_jobs,
+        "skipped_alerted_jobs": skipped_alerted_jobs,
+        "eligible_jobs": len(alerts),
         "compatible_jobs": sum(item["analysis"]["compatible"] for item in alerts),
         "filtered_out_jobs": len(filtered_out),
         "diagnostics": build_diagnostic_summary(filtered_out, alerts, threshold),

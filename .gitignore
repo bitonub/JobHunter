@@ -10,6 +10,7 @@ upload/
 data/profile.json
 data/email_alerts/
 data/gmail_token.json
+data/jobhunter.db
 data/search_preferences.json
 *.pdf
 .env
