@@ -9,6 +9,7 @@ from .io import load_json, write_json
 from .job_requirements import extract_job_requirements
 from .matcher import match_job
 from .models import Profile
+from .diagnostics import build_diagnostic_summary
 from .sources import JobSource
 from .tailor import build_tailored_cv
 
@@ -60,6 +61,7 @@ def run_pipeline(
         "eligible_jobs": len(jobs) - len(filtered_out),
         "compatible_jobs": sum(item["analysis"]["compatible"] for item in alerts),
         "filtered_out_jobs": len(filtered_out),
+        "diagnostics": build_diagnostic_summary(filtered_out, alerts, threshold),
         "preferences": preferences,
         "alerts": alerts,
         "filtered_out": filtered_out,
