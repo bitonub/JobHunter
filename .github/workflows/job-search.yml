@@ -41,12 +41,30 @@ jobs:
           umask 077
           printf '%s' "$PROFILE_JSON" > data/profile.json
 
-      - name: Run JobHunter
+      - name: Create optional temporary search preferences
+        env:
+          SEARCH_PREFERENCES_JSON: ${{ secrets.SEARCH_PREFERENCES_JSON }}
+        shell: bash
         run: |
+          set -euo pipefail
+          if [[ -n "${SEARCH_PREFERENCES_JSON:-}" ]]; then
+            umask 077
+            printf '%s' "$SEARCH_PREFERENCES_JSON" > data/search_preferences.json
+            chmod 600 data/search_preferences.json
+          fi
+
+      - name: Run JobHunter
+        shell: bash
+        run: |
+          set -euo pipefail
+          preference_args=(--preferences data/preferences.json)
+          if [[ -f data/search_preferences.json ]]; then
+            preference_args=(--search-preferences data/search_preferences.json)
+          fi
           python -m jobhunter_ai.cli run \
             --profile data/profile.json \
             --sources data/sources.remote.json \
-            --preferences data/preferences.json \
+            "${preference_args[@]}" \
             --output output
 
       - name: Send Telegram alerts
@@ -183,5 +201,5 @@ jobs:
         if: always()
         shell: bash
         run: |
-          rm -f -- data/profile.json
+          rm -f -- data/profile.json data/search_preferences.json
           rm -rf -- output

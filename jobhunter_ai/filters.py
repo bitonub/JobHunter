@@ -113,6 +113,7 @@ class FilterResult:
     work_mode: str
     reasons: list[str]
     matched_preferences: list[str]
+    it_matches: list[str]
     priority_matches: list[str]
 
     def to_dict(self) -> dict[str, Any]:
@@ -123,6 +124,7 @@ class FilterResult:
             "work_mode": self.work_mode,
             "reasons": self.reasons,
             "matched_preferences": self.matched_preferences,
+            "it_matches": self.it_matches,
             "priority_matches": self.priority_matches,
         }
 
@@ -159,7 +161,7 @@ def evaluate_job(job: Job, preferences: dict[str, Any]) -> FilterResult:
         if work_mode in allowed_work_modes:
             matched_preferences.append(f"modalidad: {work_mode}")
         elif work_mode == "unknown" and preferences.get("allow_unknown_work_mode", False):
-            matched_preferences.append("modalidad: desconocida permitida por configuración")
+            matched_preferences.append("modalidad desconocida permitida")
         else:
             reasons.append(
                 f"Modalidad no compatible: {work_mode}. "
@@ -195,13 +197,9 @@ def evaluate_job(job: Job, preferences: dict[str, Any]) -> FilterResult:
     if priority_matches:
         matched_preferences.extend(f"prioridad: {term}" for term in priority_matches)
 
-    if preferences.get("reject_non_it", False):
-        it_terms = list(preferences.get("it_terms", []))
-        technical_matches = _matched_terms(searchable_job_text, it_terms)
-        if technical_matches or priority_matches:
-            matched_preferences.append("área: TI")
-        else:
-            reasons.append("Área no compatible: no se detectaron términos de TI.")
+    it_matches = _matched_terms(searchable_job_text, list(preferences.get("it_terms", [])))
+    if it_matches or priority_matches:
+        matched_preferences.append("área: TI")
 
     return FilterResult(
         job_id=job.id,
@@ -210,5 +208,6 @@ def evaluate_job(job: Job, preferences: dict[str, Any]) -> FilterResult:
         work_mode=work_mode,
         reasons=reasons,
         matched_preferences=matched_preferences,
+        it_matches=it_matches,
         priority_matches=priority_matches,
     )

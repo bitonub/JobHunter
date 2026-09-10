@@ -3,7 +3,8 @@ import unittest
 from jobhunter_ai.cli import build_parser
 from jobhunter_ai.filters import classify_employment_type, evaluate_job
 from jobhunter_ai.io import load_json
-from jobhunter_ai.models import Job
+from jobhunter_ai.matcher import match_job
+from jobhunter_ai.models import Job, Profile
 
 
 def make_job(**overrides) -> Job:
@@ -76,15 +77,16 @@ class SearchFilterTests(unittest.TestCase):
         self.assertTrue(result.accepted)
         self.assertEqual(result.work_mode, "on-site")
 
-    def test_unknown_work_mode_is_rejected_with_clear_reason(self):
+    def test_unknown_work_mode_is_allowed_and_reported(self):
         result = evaluate_job(
             make_job(location="Monterrey", description="Entry-level Linux support role."),
             self.preferences,
         )
 
-        self.assertFalse(result.accepted)
+        self.assertTrue(result.accepted)
         self.assertEqual(result.work_mode, "unknown")
-        self.assertTrue(any("Modalidad no compatible" in reason for reason in result.reasons))
+        self.assertIn("modalidad desconocida permitida", result.matched_preferences)
+        self.assertFalse(any("Ubicación no compatible" in reason for reason in result.reasons))
 
     def test_seniority_uses_only_title_and_experience_level(self):
         description_only = evaluate_job(
@@ -151,27 +153,33 @@ class SearchFilterTests(unittest.TestCase):
     def test_technical_role_is_not_limited_to_a_closed_title_list(self):
         result = evaluate_job(
             make_job(
-                title="Observability Intern",
-                description="Remote role working with Linux, logs and automation.",
+                title="Site Reliability Intern",
+                description="Remote role maintaining distributed services.",
             ),
             self.preferences,
         )
 
         self.assertTrue(result.accepted)
-        self.assertIn("área: TI", result.matched_preferences)
-        self.assertEqual(result.priority_matches, ["Linux", "automation", "logs"])
+        self.assertEqual(result.it_matches, [])
+        self.assertEqual(result.priority_matches, [])
 
-    def test_non_it_role_is_rejected_with_clear_reason(self):
-        result = evaluate_job(
-            make_job(
-                title="Marketing Intern",
-                description="Remote role creating social media campaigns.",
-            ),
-            self.preferences,
+    def test_non_it_role_can_pass_filters_but_does_not_match_profile(self):
+        job = make_job(
+            title="Marketing Intern",
+            description="Remote role creating social media campaigns.",
+            required_skills=["brand campaign planning"],
+            preferred_skills=["social media strategy"],
+            keywords=["consumer marketing"],
         )
+        preferences = {**self.preferences, "reject_non_it": True}
+        filter_result = evaluate_job(job, preferences)
+        profile = Profile.from_dict(load_json("data/profile.example.json"))
+        match_result = match_job(profile, job)
 
-        self.assertFalse(result.accepted)
-        self.assertTrue(any("Área no compatible" in reason for reason in result.reasons))
+        self.assertTrue(filter_result.accepted)
+        self.assertFalse(any("Área no compatible" in reason for reason in filter_result.reasons))
+        self.assertEqual(match_result.score, 0.0)
+        self.assertFalse(match_result.compatible)
 
 
 if __name__ == "__main__":

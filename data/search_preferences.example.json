@@ -12,7 +12,7 @@
     "hybrid",
     "on-site"
   ],
-  "allow_unknown_work_mode": false,
+  "allow_unknown_work_mode": true,
   "allow_remote_any_location": true,
   "onsite_hybrid_allowed_locations": [
     "Nuevo León",
@@ -50,7 +50,7 @@
     "arquitecta",
     "principal"
   ],
-  "reject_non_it": true,
+  "reject_non_it": false,
   "it_terms": [
     "IT",
     "information technology",
