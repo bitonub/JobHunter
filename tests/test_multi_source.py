@@ -73,6 +73,13 @@ class MultiJobSourceTests(unittest.TestCase):
         self.assertIsInstance(source.sources[0], JobicyApiSource)
         self.assertEqual(len(source.sources), 3)
 
+    def test_loads_remote_jobicy_configuration_without_fetching(self):
+        source = load_configured_source("data/sources.remote.json")
+
+        self.assertEqual(len(source.sources), 1)
+        self.assertIsInstance(source.sources[0], JobicyApiSource)
+        self.assertIn("jobicy.com/api/v2/remote-jobs", source.sources[0].api_url)
+
 
 if __name__ == "__main__":
     unittest.main()
