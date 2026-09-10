@@ -92,13 +92,15 @@ vez por hora; este adaptador no implementa programación periódica ni caché.
 
 ## Alertas locales por correo
 
-JobHunter puede convertir mensajes RFC 822 (`.eml`) sintéticos o exportados
-localmente en vacantes, sin conectarse a Gmail ni usar credenciales:
+JobHunter puede convertir mensajes RFC 822 (`.eml`) exportados localmente en
+vacantes, sin conectarse a Gmail ni usar credenciales. Los correos reales deben
+guardarse únicamente en `data/email_alerts/`; esta carpeta es privada, está
+excluida de Git y nunca debe subirse al repositorio.
 
 ```bash
 python -m jobhunter_ai.cli run \
   --profile data/profile.json \
-  --email-alerts ruta/a/alertas \
+  --email-alerts data/email_alerts/ \
   --preferences data/preferences.json \
   --output output
 ```
