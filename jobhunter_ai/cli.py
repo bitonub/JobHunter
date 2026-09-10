@@ -56,6 +56,26 @@ def main() -> None:
     print(f"Vacantes analizadas: {report['total_jobs']}")
     print(f"Vacantes descartadas por filtros: {report['filtered_out_jobs']}")
     print(f"Vacantes compatibles: {report['compatible_jobs']}")
+    diagnostics = report["diagnostics"]
+    print(f"Descartadas por tipo de empleo: {diagnostics['discarded_by_employment_type']}")
+    print(f"Descartadas por palabras excluidas: {diagnostics['discarded_by_excluded_keyword']}")
+    print(f"Descartadas por tipo de empleo desconocido: {diagnostics['discarded_by_unknown_employment_type']}")
+    print(f"Pasaron filtros pero no alcanzaron el umbral: {diagnostics['passed_filters_below_threshold']}")
+    score_summary = diagnostics["passed_filter_score"]
+    if score_summary["count"]:
+        print(
+            "Score de vacantes que pasaron filtros: "
+            f"promedio {score_summary['average']:.2f}% "
+            f"(mínimo {score_summary['minimum']:.2f}%, máximo {score_summary['maximum']:.2f}%)"
+        )
+    else:
+        print("Score de vacantes que pasaron filtros: sin vacantes")
+    for example in diagnostics["discarded_examples"]:
+        print(
+            "Ejemplo descartado: "
+            f"{example['title']} — {example['company']} — "
+            f"{example['employment_type']} — {example['reason']}"
+        )
     print(f"Reporte: {Path(args.output) / 'alerts.json'}")
 
 
