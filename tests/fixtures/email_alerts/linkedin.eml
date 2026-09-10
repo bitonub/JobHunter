@@ -1,0 +1,30 @@
+From: LinkedIn Jobs <jobs@linkedin.example>
+To: candidate@example.test
+Subject: New job: Network Trainee at Example Infrastructure
+Date: Wed, 10 Sep 2026 08:10:00 -0600
+Message-ID: <linkedin-alert-001@linkedin.example>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="synthetic-boundary"
+
+--synthetic-boundary
+Content-Type: text/plain; charset=UTF-8
+
+Position: Network Trainee
+Company: Example Infrastructure
+Location: San Nicolás de los Garza, Nuevo León
+Learn about a trainee role supporting TCP/IP networks.
+
+--synthetic-boundary
+Content-Type: text/html; charset=UTF-8
+
+<html>
+  <body>
+    <h1>Position: Network Trainee</h1>
+    <p>Company: Example Infrastructure</p>
+    <p>Location: San Nicolás de los Garza, Nuevo León</p>
+    <a href="https://jobs.linkedin.example/jobs/view/synthetic-001">View original job</a>
+    <a href="https://jobs.linkedin.example/company/example-infrastructure">Company page</a>
+  </body>
+</html>
+
+--synthetic-boundary--

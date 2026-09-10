@@ -4,6 +4,7 @@ from pathlib import Path
 
 from ..io import load_json
 from .base import JobSource
+from .email_alert_source import EmailAlertJobSource
 from .json_source import JsonJobSource
 from .jobicy_source import JobicyApiSource
 from .multi_source import MultiJobSource
@@ -27,6 +28,9 @@ def load_configured_source(path: str | Path) -> MultiJobSource:
             raise ValueError(f"source #{index} must define 'path' or 'url'")
         if source_type == "json":
             sources.append(JsonJobSource(location))
+        elif source_type in {"email", "email-alert", "eml"}:
+            provider = str(definition.get("provider", "")).strip() or None
+            sources.append(EmailAlertJobSource(location, provider=provider))
         elif source_type == "jobicy":
             sources.append(JobicyApiSource(location))
         elif source_type in {"rss", "atom"}:

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .cv_parser import extract_text_from_pdf
 from .pipeline import run_pipeline
-from .sources import JsonJobSource, RssJobSource, load_configured_source
+from .sources import EmailAlertJobSource, JsonJobSource, RssJobSource, load_configured_source
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -21,7 +21,8 @@ def build_parser() -> argparse.ArgumentParser:
     jobs_source = run.add_mutually_exclusive_group(required=True)
     jobs_source.add_argument("--jobs", help="Vacantes en JSON")
     jobs_source.add_argument("--rss-url", help="URL de un feed RSS o Atom")
-    jobs_source.add_argument("--sources", help="Lista JSON de fuentes RSS/Atom/JSON")
+    jobs_source.add_argument("--sources", help="Lista JSON de fuentes RSS/Atom/JSON/email")
+    jobs_source.add_argument("--email-alerts", help="Archivo .eml o carpeta con alertas por correo")
     run.add_argument("--output", default="output")
     run.add_argument("--threshold", type=float, default=60.0)
     run.add_argument("--job-terms", default="data/job_terms.json", help="Catálogo de términos técnicos en JSON")
@@ -47,6 +48,8 @@ def main() -> None:
         source = load_configured_source(args.sources)
     elif args.rss_url:
         source = RssJobSource(args.rss_url)
+    elif args.email_alerts:
+        source = EmailAlertJobSource(args.email_alerts)
     else:
         source = JsonJobSource(args.jobs)
     report = run_pipeline(

@@ -88,6 +88,9 @@ class Job:
     employment_type: str = "unknown"
     schedule: str = "unknown"
     experience_level: str = "unknown"
+    sender: str = ""
+    subject: str = ""
+    links: list[str] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Job":
@@ -105,6 +108,9 @@ class Job:
             employment_type=data.get("employment_type", "unknown"),
             schedule=data.get("schedule", "unknown"),
             experience_level=data.get("experience_level", "unknown"),
+            sender=data.get("sender", ""),
+            subject=data.get("subject", ""),
+            links=list(data.get("links", [])),
         )
 
 

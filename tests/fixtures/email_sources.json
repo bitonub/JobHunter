@@ -1,0 +1,7 @@
+[
+  {
+    "type": "email",
+    "path": "tests/fixtures/email_alerts/occ.eml",
+    "provider": "configured-occ"
+  }
+]
