@@ -45,6 +45,17 @@ class FakeMessagesResource:
 
     def get(self, **kwargs):
         self.service.operations.append(("messages.get", kwargs))
+        if kwargs.get("format") == "metadata":
+            return FakeRequest({
+                "payload": {
+                    "headers": [
+                        {
+                            "name": "From",
+                            "value": self.service.senders[kwargs["id"]],
+                        }
+                    ]
+                }
+            })
         return FakeRequest({"raw": self.service.raw_messages[kwargs["id"]]})
 
 
@@ -60,10 +71,11 @@ class FakeUsersResource:
 
 
 class FakeGmailService:
-    def __init__(self, labels, messages, raw_messages):
+    def __init__(self, labels, messages, raw_messages, senders):
         self.labels = labels
         self.messages = messages
         self.raw_messages = raw_messages
+        self.senders = senders
         self.operations = []
 
     def users(self):
@@ -82,13 +94,26 @@ class GmailLabelJobSourceTests(unittest.TestCase):
             (FIXTURE_DIR / "gmail_api.json").read_text(encoding="utf-8")
         )
 
-    def make_service(self, *, labels=None, messages=None, raw_messages=None):
+    def make_service(
+        self,
+        *,
+        labels=None,
+        messages=None,
+        raw_messages=None,
+        senders=None,
+    ):
         return FakeGmailService(
             labels=self.api_fixture["labels"] if labels is None else labels,
             messages=self.api_fixture["messages"] if messages is None else messages,
             raw_messages=raw_messages or {
                 "gmail-synthetic-occ": encoded_email("occ.eml"),
                 "gmail-synthetic-indeed": encoded_email("indeed.eml"),
+            },
+            senders=senders or {
+                "gmail-synthetic-occ": "Synthetic Alerts <alerts@occ.example>",
+                "gmail-synthetic-indeed": "Synthetic Alerts <alerts@indeed.example>",
+                "gmail-synthetic-link": "Synthetic Alerts <alerts@occ.example>",
+                "gmail-synthetic-digest": "Synthetic Alerts <alerts@linkedin.example>",
             },
         )
 
@@ -159,6 +184,10 @@ class GmailLabelJobSourceTests(unittest.TestCase):
                 "reason": "Dominio de remitente no permitido: occ.example.",
             }
         ])
+        self.assertFalse(any(
+            operation == "messages.get" and arguments.get("format") == "raw"
+            for operation, arguments in service.operations
+        ))
 
     def test_missing_label_stops_before_reading_messages(self):
         service = self.make_service(labels=[{"id": "INBOX", "name": "INBOX"}])
@@ -193,8 +222,10 @@ class GmailLabelJobSourceTests(unittest.TestCase):
 
         self.assertEqual(
             [operation for operation, _ in service.operations],
-            ["labels.list", "messages.list", "messages.get"],
+            ["labels.list", "messages.list", "messages.get", "messages.get"],
         )
+        self.assertEqual(service.operations[2][1]["format"], "metadata")
+        self.assertEqual(service.operations[3][1]["format"], "raw")
 
     def test_gmail_synthetic_link_is_rejected_by_pipeline(self):
         service = self.make_service(
@@ -223,8 +254,31 @@ class GmailLabelJobSourceTests(unittest.TestCase):
         self.assertEqual(report["diagnostics"]["rejected_synthetic_links"], 1)
         self.assertEqual(
             [operation for operation, _ in service.operations],
-            ["labels.list", "messages.list", "messages.get"],
+            ["labels.list", "messages.list", "messages.get", "messages.get"],
         )
+
+    def test_gmail_digest_returns_multiple_jobs_from_one_raw_message(self):
+        service = self.make_service(
+            messages=[{"id": "gmail-synthetic-digest"}],
+            raw_messages={
+                "gmail-synthetic-digest": encoded_email("linkedin_digest.eml"),
+            },
+        )
+        source = GmailLabelJobSource(
+            None,
+            ["linkedin.example"],
+            service=service,
+            max_messages=1,
+        )
+
+        jobs = source.fetch_jobs()
+
+        self.assertEqual(len(jobs), 2)
+        self.assertEqual(
+            [job.title for job in jobs],
+            ["Security Intern", "Technical Support Trainee"],
+        )
+        self.assertTrue(all(job.url.startswith("https://www.linkedin.com/jobs/view/") for job in jobs))
 
     def test_cli_accepts_gmail_configuration(self):
         args = build_parser().parse_args([

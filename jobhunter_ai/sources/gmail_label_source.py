@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+from email.utils import parseaddr
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -67,6 +68,21 @@ class GmailLabelJobSource(JobSource):
             message_id = str(summary.get("id", "")).strip()
             if not message_id:
                 continue
+            metadata = (
+                service.users()
+                .messages()
+                .get(
+                    userId="me",
+                    id=message_id,
+                    format="metadata",
+                    metadataHeaders=["From"],
+                )
+                .execute()
+            )
+            sender_domain = self._sender_domain_from_metadata(metadata)
+            if not self._is_allowed_domain(sender_domain):
+                self._record_disallowed_sender(sender_domain)
+                continue
             payload = (
                 service.users()
                 .messages()
@@ -74,24 +90,41 @@ class GmailLabelJobSource(JobSource):
                 .execute()
             )
             raw_message = self._decode_raw(payload.get("raw"))
-            job = EmailAlertJobSource.parse_bytes(
+            parsed_jobs = EmailAlertJobSource.parse_jobs(
                 raw_message,
                 fallback_id=f"gmail-{message_id}",
             )
-            sender_domain = job.sender.rpartition("@")[2].lower()
-            if not self._is_allowed_domain(sender_domain):
-                self.discarded_messages.append(
-                    {
-                        "sender_domain": sender_domain or "unknown",
-                        "reason": (
-                            "Dominio de remitente no permitido: "
-                            f"{sender_domain or 'desconocido'}."
-                        ),
-                    }
-                )
+            parsed_sender_domain = parsed_jobs[0].sender.rpartition("@")[2].lower()
+            if not self._is_allowed_domain(parsed_sender_domain):
+                self._record_disallowed_sender(parsed_sender_domain)
                 continue
-            jobs.append(job)
+            jobs.extend(parsed_jobs)
         return jobs
+
+    @staticmethod
+    def _sender_domain_from_metadata(payload: dict[str, Any]) -> str:
+        headers = (payload.get("payload") or {}).get("headers") or []
+        sender = next(
+            (
+                str(header.get("value", ""))
+                for header in headers
+                if str(header.get("name", "")).lower() == "from"
+            ),
+            "",
+        )
+        address = parseaddr(sender)[1]
+        return address.rpartition("@")[2].lower()
+
+    def _record_disallowed_sender(self, sender_domain: str) -> None:
+        self.discarded_messages.append(
+            {
+                "sender_domain": sender_domain or "unknown",
+                "reason": (
+                    "Dominio de remitente no permitido: "
+                    f"{sender_domain or 'desconocido'}."
+                ),
+            }
+        )
 
     def _resolve_label_id(self, service: Any) -> str:
         response = service.users().labels().list(userId="me").execute()

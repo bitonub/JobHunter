@@ -1,0 +1,38 @@
+From: LinkedIn Jobs <jobs@linkedin.example>
+To: candidate@example.test
+Subject: Synthetic weekly job digest
+Date: Thu, 11 Sep 2026 08:00:00 -0600
+Message-ID: <linkedin-digest-001@linkedin.example>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="digest-boundary"
+
+--digest-boundary
+Content-Type: text/plain; charset=UTF-8
+
+Two synthetic opportunities are included in the HTML version.
+
+--digest-boundary
+Content-Type: text/html; charset=UTF-8
+
+<html>
+  <body>
+    <table class="job-card">
+      <tr><td><a href="https://www.linkedin.com/jobs/view/2000000001?trackingId=image"><img alt="" /></a></td></tr>
+      <tr><td><a href="https://www.linkedin.com/jobs/view/2000000001?trackingId=title">Security Intern</a></td></tr>
+      <tr><td>Northstar Security Lab</td></tr>
+      <tr><td>Monterrey, Nuevo León · Hybrid</td></tr>
+      <tr><td>Assist with Python automation, security logs and incident documentation.</td></tr>
+      <tr><td><a href="https://www.linkedin.com/jobs/view/2000000001?trackingId=button">View job</a></td></tr>
+    </table>
+    <table class="job-card">
+      <tr><td><a href="https://www.linkedin.com/jobs/view/2000000002?trackingId=image"><img alt="" /></a></td></tr>
+      <tr><td><a href="https://www.linkedin.com/jobs/view/2000000002?trackingId=title">Technical Support Trainee</a></td></tr>
+      <tr><td>Contoso Support Lab</td></tr>
+      <tr><td>Remote · Part-time</td></tr>
+      <tr><td>Support Windows and Linux users while documenting technical incidents.</td></tr>
+      <tr><td><a href="https://www.linkedin.com/jobs/view/2000000002?trackingId=button">Apply now</a></td></tr>
+    </table>
+  </body>
+</html>
+
+--digest-boundary--
