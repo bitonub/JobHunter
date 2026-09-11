@@ -80,7 +80,10 @@ por seguridad mientras `allow_unknown_employment_type` sea `false`.
 Si esa vacante tiene título, empresa, URL válida y señales explícitas de TI, se
 añade también a `review_queue` dentro de `alerts.json` y al reporte Markdown.
 No pasa al matching ni genera CV o alerta compatible hasta que su modalidad se
-pueda clasificar.
+pueda clasificar. La cola exige modalidad y ubicación identificables: remoto se
+permite desde cualquier ubicación, mientras presencial o híbrido se limita a
+Monterrey y el área metropolitana de Nuevo León. Las señales explícitas de
+tiempo completo excluyen la vacante de la cola.
 
 Pruebas:
 

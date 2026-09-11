@@ -11,7 +11,12 @@ from .job_quality import evaluate_email_job_quality
 from .matcher import match_job
 from .models import Profile
 from .diagnostics import build_diagnostic_summary
-from .review_queue import build_review_entry, load_review_terms, write_review_queue
+from .review_queue import (
+    build_review_queue_diagnostics,
+    evaluate_review_candidate,
+    load_review_terms,
+    write_review_queue,
+)
 from .sources import JobSource
 from .storage import JobStateStatus, JobStateStore
 from .tailor import build_tailored_cv
@@ -39,6 +44,7 @@ def run_pipeline(
     alerts = []
     filtered_out = []
     review_queue = []
+    review_diagnostic_codes = []
     review_terms = None
     new_jobs = 0
     previously_seen_jobs = 0
@@ -75,18 +81,24 @@ def run_pipeline(
         filter_result = evaluate_job(job, preferences)
         if not filter_result.accepted:
             filtered_out.append({"job": asdict(job), "filter": filter_result.to_dict()})
-            if filter_result.employment_type == "unknown":
-                if review_terms is None:
-                    review_terms = load_review_terms(preferences, job_terms_path)
-                review_entry = build_review_entry(job, filter_result, review_terms)
-            else:
-                review_entry = None
-            if review_entry is not None:
-                review_queue.append(review_entry)
+            if review_terms is None:
+                review_terms = load_review_terms(preferences, job_terms_path)
+            review_decision = evaluate_review_candidate(
+                job,
+                filter_result,
+                review_terms,
+                preferences,
+            )
+            if review_decision.entry is not None:
+                review_queue.append(review_decision.entry)
+            if review_decision.diagnostic_code is not None:
+                review_diagnostic_codes.append(review_decision.diagnostic_code)
             if state_store is not None:
                 state_store.record(
                     job,
-                    JobStateStatus.REVIEWABLE if review_entry else JobStateStatus.DISCARDED,
+                    JobStateStatus.REVIEWABLE
+                    if review_decision.entry
+                    else JobStateStatus.DISCARDED,
                 )
             continue
         result = match_job(profile, job, threshold=threshold)
@@ -120,6 +132,9 @@ def run_pipeline(
         "compatible_jobs": sum(item["analysis"]["compatible"] for item in alerts),
         "filtered_out_jobs": len(filtered_out),
         "review_queue_jobs": len(review_queue),
+        "review_queue_diagnostics": build_review_queue_diagnostics(
+            review_diagnostic_codes
+        ),
         "diagnostics": build_diagnostic_summary(filtered_out, alerts, threshold),
         "preferences": preferences,
         "alerts": alerts,

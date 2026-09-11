@@ -120,6 +120,19 @@ def main() -> None:
     print(f"Vacantes vistas anteriormente: {report['previously_seen_jobs']}")
     print(f"Vacantes descartadas por filtros: {report['filtered_out_jobs']}")
     print(f"Vacantes en cola de revisión manual: {report['review_queue_jobs']}")
+    review_diagnostics = report["review_queue_diagnostics"]
+    print(
+        "Excluidas de revisión por ubicación: "
+        f"{review_diagnostics['outside_allowed_location']['count']}"
+    )
+    print(
+        "Excluidas de revisión por tiempo completo: "
+        f"{review_diagnostics['full_time_detected']['count']}"
+    )
+    print(
+        "Excluidas de revisión por modalidad/ubicación insuficiente: "
+        f"{review_diagnostics['insufficient_work_mode_or_location']['count']}"
+    )
     print(f"Vacantes compatibles: {report['compatible_jobs']}")
     diagnostics = report["diagnostics"]
     print(f"Descartadas por tipo de empleo: {diagnostics['discarded_by_employment_type']}")

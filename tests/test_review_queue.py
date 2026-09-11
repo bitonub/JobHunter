@@ -22,9 +22,9 @@ def make_job(**overrides) -> Job:
         "id": "synthetic-review-job",
         "title": "Cloud Operations Analyst",
         "company": "Synthetic Technology Lab",
-        "location": "Monterrey, Nuevo León",
+        "location": "Toronto, Canada",
         "url": "https://www.linkedin.com/jobs/view/9000000001",
-        "description": "Monitor Python automation and Linux infrastructure.",
+        "description": "Remote role monitoring Python automation and Linux infrastructure.",
         "required_skills": [],
         "preferred_skills": [],
         "keywords": [],
@@ -38,12 +38,17 @@ def make_job(**overrides) -> Job:
 
 
 class ManualReviewQueueTests(unittest.TestCase):
-    def run_jobs(self, jobs: list[Job], output: str) -> dict:
+    def run_jobs(
+        self,
+        jobs: list[Job],
+        output: str,
+        preferences: str = "data/search_preferences.example.json",
+    ) -> dict:
         return run_pipeline(
             "data/profile.example.json",
             StaticJobSource(jobs),
             output,
-            preferences_path="data/preferences.json",
+            preferences_path=preferences,
             job_terms_path="data/job_terms.json",
         )
 
@@ -69,6 +74,7 @@ class ManualReviewQueueTests(unittest.TestCase):
         self.assertIn(job.company, markdown)
         self.assertIn(job.url, markdown)
         self.assertNotIn(job.description, markdown)
+        self.assertEqual(report["review_queue"][0]["location"], "Toronto, Canada")
 
     def test_json_queue_contains_only_allowed_fields(self):
         with tempfile.TemporaryDirectory() as output:
@@ -85,16 +91,111 @@ class ManualReviewQueueTests(unittest.TestCase):
             "Tipo de empleo desconocido; requiere revisión manual.",
         )
 
-    def test_missing_location_is_omitted_from_queue_entry(self):
+    def test_remote_job_without_location_is_rejected_from_queue(self):
         with tempfile.TemporaryDirectory() as output:
             report = self.run_jobs(
                 [make_job(location="No especificada")],
                 output,
             )
 
+        self.assertEqual(report["review_queue"], [])
         self.assertEqual(
-            set(report["review_queue"][0]),
-            {"title", "company", "url", "reason"},
+            report["review_queue_diagnostics"][
+                "insufficient_work_mode_or_location"
+            ]["count"],
+            1,
+        )
+
+    def test_unknown_work_mode_is_rejected_from_queue(self):
+        job = make_job(
+            location="Monterrey, Nuevo León",
+            description="Monitor Python automation and Linux infrastructure.",
+        )
+        with tempfile.TemporaryDirectory() as output:
+            report = self.run_jobs([job], output)
+
+        self.assertEqual(report["review_queue"], [])
+        diagnostic = report["review_queue_diagnostics"][
+            "insufficient_work_mode_or_location"
+        ]
+        self.assertEqual(diagnostic["count"], 1)
+        self.assertIn("modalidad o ubicación", diagnostic["reason"])
+
+    def test_hybrid_job_requires_metropolitan_nuevo_leon_location(self):
+        inside = make_job(
+            id="inside-location",
+            location="San Pedro Garza García, Nuevo León",
+            description="Hybrid role monitoring Python and Linux infrastructure.",
+        )
+        outside = make_job(
+            id="outside-location",
+            location="Linares, Nuevo León",
+            description="Hybrid role monitoring Python and Linux infrastructure.",
+        )
+        with tempfile.TemporaryDirectory() as output:
+            report = self.run_jobs([inside, outside], output)
+
+        self.assertEqual(
+            [entry["title"] for entry in report["review_queue"]],
+            [inside.title],
+        )
+        diagnostic = report["review_queue_diagnostics"]["outside_allowed_location"]
+        self.assertEqual(diagnostic["count"], 1)
+        self.assertIn("Nuevo León", diagnostic["reason"])
+
+    def test_basic_preferences_still_apply_safe_review_location_rules(self):
+        remote = make_job(id="remote-with-basic-preferences")
+        outside = make_job(
+            id="outside-with-basic-preferences",
+            location="Linares, Nuevo León",
+            description="Hybrid role monitoring Python and Linux infrastructure.",
+        )
+        with tempfile.TemporaryDirectory() as output:
+            report = self.run_jobs(
+                [remote, outside],
+                output,
+                preferences="data/preferences.json",
+            )
+
+        self.assertFalse(report["preferences"]["allow_unknown_employment_type"])
+        self.assertEqual(len(report["review_queue"]), 1)
+        self.assertEqual(report["review_queue"][0]["location"], "Toronto, Canada")
+        self.assertEqual(
+            report["review_queue_diagnostics"]["outside_allowed_location"]["count"],
+            1,
+        )
+
+    def test_full_time_signal_is_rejected_even_when_title_says_junior(self):
+        job = make_job(
+            title="Junior Cloud Operations Analyst",
+            description="Remote full-time role using Python and Linux.",
+        )
+        with tempfile.TemporaryDirectory() as output:
+            report = self.run_jobs([job], output)
+
+        self.assertEqual(report["review_queue"], [])
+        diagnostic = report["review_queue_diagnostics"]["full_time_detected"]
+        self.assertEqual(diagnostic["count"], 1)
+        self.assertIn("tiempo completo", diagnostic["reason"])
+
+    def test_spanish_full_time_signals_are_rejected(self):
+        jobs = [
+            make_job(
+                id="tiempo-completo",
+                description="Puesto remoto de tiempo completo con Python.",
+            ),
+            make_job(
+                id="jornada-completa",
+                description="Puesto remoto de jornada completa con Linux.",
+            ),
+        ]
+        with tempfile.TemporaryDirectory() as output:
+            report = self.run_jobs(jobs, output)
+
+        self.assertEqual(report["review_queue"], [])
+        self.assertEqual(
+            report["review_queue_diagnostics"]["full_time_detected"]["count"],
+            2,
         )
 
     def test_non_it_unknown_job_is_not_queued(self):
