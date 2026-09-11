@@ -1,0 +1,15 @@
+From: Synthetic OCC Alerts <alerts@occ.example>
+To: candidate@example.test
+Subject: Alerta de empleo: Security Intern en Placeholder Labs
+Date: Wed, 10 Sep 2026 08:20:00 -0600
+Message-ID: <synthetic-link-alert-001@occ.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Vacante: Security Intern
+Empresa: Placeholder Labs
+Ubicación: Monterrey, Nuevo León
+Modalidad: Medio tiempo
+Descripción: Apoyo inicial con Python, Linux y análisis de vulnerabilidades.
+Postulación: https://example.com/jobs/security-intern

@@ -14,8 +14,28 @@ def build_diagnostic_summary(
     discarded_by_excluded_keyword = 0
     discarded_by_unknown_employment_type = 0
     discarded_examples: list[dict[str, str]] = []
+    rejected_synthetic_links = 0
+    insufficient_data_jobs = 0
+    insufficient_data_examples: list[dict[str, object]] = []
 
     for item in filtered_out:
+        quality_data = item.get("quality", {})
+        if quality_data.get("applicable") and not quality_data.get("accepted"):
+            insufficient_data_jobs += 1
+            rejected_synthetic_links += int(
+                quality_data.get("rejected_synthetic_links", 0)
+            )
+            if len(insufficient_data_examples) < 10:
+                job = item.get("job", {})
+                insufficient_data_examples.append(
+                    {
+                        "title": str(job.get("title", "")),
+                        "company": str(job.get("company", "")),
+                        "reasons": [
+                            str(reason) for reason in quality_data.get("reasons", [])
+                        ],
+                    }
+                )
         filter_data = item.get("filter", {})
         reasons = [str(reason) for reason in filter_data.get("reasons", [])]
         has_employment_type_reason = any(
@@ -42,6 +62,11 @@ def build_diagnostic_summary(
                 }
             )
 
+    rejected_synthetic_links += sum(
+        int(item.get("quality", {}).get("rejected_synthetic_links", 0))
+        for item in alerts
+    )
+
     scores = [
         float(item["analysis"]["score"])
         for item in alerts
@@ -58,6 +83,9 @@ def build_diagnostic_summary(
         "discarded_by_employment_type": discarded_by_employment_type,
         "discarded_by_excluded_keyword": discarded_by_excluded_keyword,
         "discarded_by_unknown_employment_type": discarded_by_unknown_employment_type,
+        "rejected_synthetic_links": rejected_synthetic_links,
+        "insufficient_data_jobs": insufficient_data_jobs,
+        "insufficient_data_examples": insufficient_data_examples,
         "passed_filters_below_threshold": sum(
             not item.get("analysis", {}).get("compatible", False) for item in alerts
         ),

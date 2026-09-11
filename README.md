@@ -134,6 +134,12 @@ dominios del ejemplo son sintéticos y deben reemplazarse localmente por los
 proveedores autorizados. El conector descarta cualquier otro dominio y no
 guarda el mensaje raw ni su HTML en archivos o logs.
 
+Antes del matching, las alertas de correo deben incluir título, empresa,
+descripción suficiente y una URL HTTP/HTTPS de vacante perteneciente a OCC,
+Indeed o LinkedIn. Los enlaces de demostración o sintéticos se rechazan. Una
+alerta incompleta queda registrada en los diagnósticos, pero no genera CV ni se
+incluye entre las alertas compatibles.
+
 ### Autorización OAuth local
 
 Antes de usar el conector:
