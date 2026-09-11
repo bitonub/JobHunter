@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from jobhunter_ai.cli import build_parser
+from jobhunter_ai.pipeline import run_pipeline
 from jobhunter_ai.sources import (
     GmailLabelJobSource,
     GmailLabelNotFoundError,
@@ -190,6 +191,36 @@ class GmailLabelJobSourceTests(unittest.TestCase):
 
         source.fetch_jobs()
 
+        self.assertEqual(
+            [operation for operation, _ in service.operations],
+            ["labels.list", "messages.list", "messages.get"],
+        )
+
+    def test_gmail_synthetic_link_is_rejected_by_pipeline(self):
+        service = self.make_service(
+            messages=[{"id": "gmail-synthetic-link"}],
+            raw_messages={
+                "gmail-synthetic-link": encoded_email("synthetic_link.eml"),
+            },
+        )
+        source = GmailLabelJobSource(
+            None,
+            ["occ.example"],
+            service=service,
+        )
+
+        with tempfile.TemporaryDirectory() as output:
+            report = run_pipeline(
+                "data/profile.example.json",
+                source,
+                output,
+                preferences_path="data/preferences.json",
+                job_terms_path="data/job_terms.json",
+            )
+
+        self.assertEqual(report["alerts"], [])
+        self.assertEqual(report["compatible_jobs"], 0)
+        self.assertEqual(report["diagnostics"]["rejected_synthetic_links"], 1)
         self.assertEqual(
             [operation for operation, _ in service.operations],
             ["labels.list", "messages.list", "messages.get"],

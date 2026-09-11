@@ -124,6 +124,8 @@ def main() -> None:
     print(f"Descartadas por tipo de empleo: {diagnostics['discarded_by_employment_type']}")
     print(f"Descartadas por palabras excluidas: {diagnostics['discarded_by_excluded_keyword']}")
     print(f"Descartadas por tipo de empleo desconocido: {diagnostics['discarded_by_unknown_employment_type']}")
+    print(f"Enlaces sintéticos rechazados: {diagnostics['rejected_synthetic_links']}")
+    print(f"Vacantes con datos insuficientes: {diagnostics['insufficient_data_jobs']}")
     print(f"Pasaron filtros pero no alcanzaron el umbral: {diagnostics['passed_filters_below_threshold']}")
     score_summary = diagnostics["passed_filter_score"]
     if score_summary["count"]:

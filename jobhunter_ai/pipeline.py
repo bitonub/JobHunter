@@ -7,6 +7,7 @@ from pathlib import Path
 from .filters import evaluate_job
 from .io import load_json, write_json
 from .job_requirements import extract_job_requirements
+from .job_quality import evaluate_email_job_quality
 from .matcher import match_job
 from .models import Profile
 from .diagnostics import build_diagnostic_summary
@@ -41,6 +42,7 @@ def run_pipeline(
     skipped_alerted_jobs = 0
     for raw_job in jobs:
         job = extract_job_requirements(raw_job, terms_path=job_terms_path)
+        quality_result = evaluate_email_job_quality(job)
         if state_store is None:
             new_jobs += 1
         else:
@@ -55,6 +57,18 @@ def run_pipeline(
                     continue
                 state_store.record(job, stored_state.status, stored_state.score)
 
+        if quality_result.applicable and not quality_result.accepted:
+            filtered_out.append(
+                {
+                    "job": asdict(job),
+                    "filter": quality_result.to_filter_dict(job),
+                    "quality": quality_result.to_dict(),
+                }
+            )
+            if state_store is not None:
+                state_store.record(job, JobStateStatus.DISCARDED)
+            continue
+
         filter_result = evaluate_job(job, preferences)
         if not filter_result.accepted:
             filtered_out.append({"job": asdict(job), "filter": filter_result.to_dict()})
@@ -67,6 +81,8 @@ def run_pipeline(
             "analysis": result.to_dict(),
             "filter": filter_result.to_dict(),
         }
+        if quality_result.applicable:
+            record["quality"] = quality_result.to_dict()
         if result.compatible:
             if state_store is not None:
                 state_store.record(job, JobStateStatus.COMPATIBLE, result.score)

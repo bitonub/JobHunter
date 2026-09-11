@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from html import unescape
 from email import policy
 from email.message import Message
 from email.parser import BytesParser
@@ -8,6 +9,8 @@ from email.utils import parseaddr
 from html.parser import HTMLParser
 from pathlib import Path
 
+from ..filters import classify_employment_type
+from ..job_quality import select_application_url
 from ..models import Job
 from .base import JobSource
 
@@ -119,31 +122,32 @@ class EmailAlertJobSource(JobSource):
         description, links = cls._message_content(message)
         title = cls._labeled_value(
             description,
-            ("job title", "title", "vacante", "puesto", "position"),
+            ("job title", "title", "vacante", "puesto", "position", "cargo", "role"),
         )
         company = cls._labeled_value(
             description,
-            ("company", "empresa", "compañía", "employer"),
+            ("company", "empresa", "compañía", "employer", "contratante"),
         )
         location = cls._labeled_value(
             description,
-            ("location", "ubicación", "ubicacion", "lugar"),
+            ("location", "ubicación", "ubicacion", "lugar", "ciudad", "city", "zona"),
         )
         subject_title, subject_company = cls._subject_details(subject)
         title = title or subject_title
         company = company or subject_company
 
-        return Job(
+        source = cls._provider(sender, provider)
+        job = Job(
             id=cls._message_id(message, fallback_id),
             title=title or "No especificado",
             company=company or "No especificada",
             location=location or "No especificada",
-            url=cls._application_url(links),
+            url=select_application_url(links, source, sender),
             description=description,
             required_skills=[],
             preferred_skills=[],
             keywords=[],
-            source=cls._provider(sender, provider),
+            source=source,
             employment_type="unknown",
             schedule="unknown",
             experience_level="unknown",
@@ -151,6 +155,10 @@ class EmailAlertJobSource(JobSource):
             subject=subject,
             links=links,
         )
+        job.employment_type = classify_employment_type(job)
+        if job.employment_type == "part-time":
+            job.schedule = "part-time"
+        return job
 
     @classmethod
     def _message_content(cls, message: Message) -> tuple[str, list[str]]:
@@ -180,7 +188,7 @@ class EmailAlertJobSource(JobSource):
                     plain_parts.append(normalized)
                 links.extend(cls._find_urls(content))
 
-        description = "\n".join(plain_parts or html_parts)
+        description = cls._merge_text_parts([*plain_parts, *html_parts])
         return description, cls._deduplicate(links)
 
     @staticmethod
@@ -203,7 +211,23 @@ class EmailAlertJobSource(JobSource):
 
     @staticmethod
     def _find_urls(value: str) -> list[str]:
-        return [match.group(0).rstrip(".,;:!?)") for match in _URL_PATTERN.finditer(value)]
+        return [
+            unescape(match.group(0)).rstrip(".,;:!?)")
+            for match in _URL_PATTERN.finditer(value)
+        ]
+
+    @staticmethod
+    def _merge_text_parts(parts: list[str]) -> str:
+        lines: list[str] = []
+        seen: set[str] = set()
+        for part in parts:
+            for line in part.splitlines():
+                normalized = " ".join(line.split())
+                key = normalized.casefold()
+                if normalized and key not in seen:
+                    lines.append(normalized)
+                    seen.add(key)
+        return "\n".join(lines)
 
     @staticmethod
     def _deduplicate(values: list[str]) -> list[str]:
@@ -217,7 +241,10 @@ class EmailAlertJobSource(JobSource):
 
     @staticmethod
     def _subject_details(subject: str) -> tuple[str, str]:
-        prefix = r"(?:job alert|new job|alerta de empleo|nueva vacante)"
+        prefix = (
+            r"(?:job alert|new job|recommended job|alerta de empleo|nueva vacante|"
+            r"nuevo empleo|empleo recomendado)"
+        )
         match = re.match(
             rf"(?i)^\s*{prefix}\s*:\s*(?P<title>.+?)\s+(?:at|en)\s+(?P<company>.+?)\s*$",
             subject,
@@ -226,16 +253,6 @@ class EmailAlertJobSource(JobSource):
             return match.group("title").strip(), match.group("company").strip()
         match = re.match(rf"(?i)^\s*{prefix}\s*:\s*(?P<title>.+?)\s*$", subject)
         return (match.group("title").strip(), "") if match else ("", "")
-
-    @staticmethod
-    def _application_url(links: list[str]) -> str:
-        ignored = ("unsubscribe", "privacy", "preferences")
-        candidates = [link for link in links if not any(term in link.lower() for term in ignored)]
-        hints = ("apply", "job", "vacant", "empleo", "position")
-        return next(
-            (link for link in candidates if any(hint in link.lower() for hint in hints)),
-            candidates[0] if candidates else "",
-        )
 
     @staticmethod
     def _message_id(message: Message, fallback_id: str) -> str:
