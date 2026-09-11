@@ -139,6 +139,32 @@ de escritorio configurada en Google Cloud. Esta entrega no implementa ese flujo:
 solo lee un token local ya autorizado. `data/gmail_token.json` está excluido de
 Git y nunca debe subirse al repositorio, copiarse a artifacts ni imprimirse.
 
+## Historial y deduplicación local
+
+La opción `--state-db` activa un historial SQLite local para evitar que una
+vacante cuya alerta ya fue confirmada vuelva a generar una alerta o un CV
+adaptado:
+
+```bash
+python -m jobhunter_ai.cli run \
+  --profile data/profile.json \
+  --sources data/sources.example.json \
+  --state-db data/jobhunter.db \
+  --output output
+```
+
+La base conserva únicamente hashes SHA-256 del identificador y del enlace,
+la fuente, fechas, estado y score. No almacena el texto de la vacante o del
+correo, el perfil ni el CV. Un cambio de fuente, identificador o enlace se
+considera una vacante nueva; los parámetros habituales de seguimiento del
+enlace no alteran su identidad. `data/jobhunter.db` está excluido de Git.
+
+SQLite es persistencia exclusivamente local. El pipeline deja las coincidencias
+en estado `compatible`; un canal de alertas debe confirmar el envío mediante la
+operación explícita del almacenamiento antes de cambiarlo a `alertado`. Mientras
+esa confirmación no exista, la vacante puede volver a procesarse. Esta base aún
+no se conserva entre ejecuciones independientes de GitHub Actions.
+
 ## Ejecución remota con GitHub Actions
 
 El workflow `Remote Job Search` puede ejecutarse manualmente o cada seis horas.
