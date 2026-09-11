@@ -70,12 +70,17 @@ Archivos generados:
 
 - `output/alerts.json`: vacante, porcentaje, requisitos cumplidos/faltantes, evidencia y ruta del CV.
 - `output/cv_adaptado_<id>.md`: CV adaptado y legible por ATS.
+- `output/review_queue.md`: vacantes técnicas con tipo de empleo desconocido para revisión manual.
 - `data/preferences.json`: tipos de empleo permitidos y palabras excluidas.
 
 Para aceptar otra modalidad, edita `allowed_employment_types`. Los valores
 soportados por el MVP son `internship`, `part-time`, `trainee`,
 `apprenticeship` y `student`. Si una vacante no declara modalidad, se descarta
 por seguridad mientras `allow_unknown_employment_type` sea `false`.
+Si esa vacante tiene título, empresa, URL válida y señales explícitas de TI, se
+añade también a `review_queue` dentro de `alerts.json` y al reporte Markdown.
+No pasa al matching ni genera CV o alerta compatible hasta que su modalidad se
+pueda clasificar.
 
 Pruebas:
 
