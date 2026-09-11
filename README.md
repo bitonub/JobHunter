@@ -1,249 +1,130 @@
 # JobHunter AI
 
-MVP de un sistema transparente para buscar vacantes, comparar requisitos contra un perfil profesional y generar una versión ATS-friendly del CV sin inventar información.
+> **v0.1.0 — MVP funcional y reproducible**
 
-## Qué hace este MVP
+Sistema en Python para filtrar vacantes, compararlas de forma explicable con un perfil profesional y preparar un CV en Markdown compatible con ATS. El proyecto prioriza la trazabilidad: no inventa habilidades, experiencia, estudios ni certificaciones.
 
-1. Carga un perfil estructurado basado en el CV original.
-2. Lee vacantes en JSON.
-3. Calcula compatibilidad con una fórmula explicable:
-   - 60% requisitos obligatorios.
-   - 25% requisitos deseables.
-   - 15% palabras clave.
-4. Separa requisitos cumplidos y faltantes.
-5. Adjunta evidencia del CV para cada coincidencia.
-6. Descarta vacantes bajo el umbral configurado.
-7. Genera `alerts.json` y un `cv_adaptado_<id>.md` por vacante compatible.
-8. Descarta antes del matching las vacantes que no correspondan a prácticas, medio tiempo, trainee, apprenticeship o posiciones estudiantiles.
+## Problema que resuelve
 
-El MVP usa datos de ejemplo para que sea reproducible. La siguiente etapa añadirá adaptadores de fuentes reales, deduplicación, alertas y revisión humana antes de postular.
+Buscar empleo suele requerir revisar muchas vacantes que no coinciden con la disponibilidad, el nivel o el perfil de una persona. JobHunter AI automatiza la parte de **análisis y priorización**, pero mantiene la decisión y la postulación bajo control humano.
 
-## Privacidad y GitHub
+No envía postulaciones automáticamente.
 
-`data/profile.json`, el PDF original y los archivos generados en `output/` son
-locales y están excluidos de Git para no publicar teléfono, correo ni el CV
-personal. Usa `data/profile.example.json` como plantilla pública y crea tu
-propio `data/profile.json` local.
+## Capacidades incluidas
+
+- Carga un perfil estructurado derivado del CV original.
+- Lee vacantes de archivos JSON y adaptadores normalizados.
+- Filtra antes del matching puestos fuera de prácticas, medio tiempo, trainee, apprenticeship o student.
+- Excluye por configuración términos de nivel como `senior`, `lead`, `manager` y `director`.
+- Calcula un porcentaje de compatibilidad explicable:
+  - 60% requisitos obligatorios.
+  - 25% requisitos deseables.
+  - 15% palabras clave.
+- Informa requisitos cumplidos, faltantes y evidencia del perfil para cada coincidencia.
+- Genera `alerts.json` y, únicamente para vacantes compatibles, un `cv_adaptado_<id>.md`.
+- Mantiene deduplicación e historial local con SQLite.
+- Puede leer localmente alertas RFC 822 (`.eml`) o mensajes de una etiqueta de Gmail en modo solo lectura.
+- Incluye una cola de revisión para vacantes técnicas que no declaran tipo de empleo, sin enviarlas al matching ni generar un CV.
+- Incluye pruebas automatizadas y un workflow de integración continua.
 
 ## Arquitectura
 
 ```text
-Fuentes de vacantes -> Normalizador -> Matcher explicable -> Filtro
-                                            |
-                                            +-> Evidencia y análisis
-                                            +-> CV ATS adaptado -> Alertas
+Fuentes normalizadas
+        |
+        v
+Validación de calidad -> Filtros de preferencias -> Matcher explicable
+                                                        |
+                                                        +-> Evidencia y análisis
+                                                        +-> CV ATS adaptado
+                                                        +-> Reporte / revisión humana
 ```
 
-La separación principal está en `models.py`, `matcher.py`, `tailor.py` y `pipeline.py`. En una versión posterior, los conectores web solo tendrán que producir el mismo modelo `Job`.
+La separación principal del código está en `models.py`, `sources/`, `matcher.py`, `tailor.py`, `pipeline.py` y `storage.py`. Un nuevo conector solo necesita producir el modelo común `Job`.
 
-## Instalación
+## Uso local
 
-```bash
+Requisitos: Python 3.10 o superior.
+
+```powershell
 python -m venv .venv
-source .venv/bin/activate       # Windows: .venv\\Scripts\\activate
+.\.venv\Scripts\Activate.ps1
 pip install -e .
 ```
 
-## Uso
+Crea tu perfil privado a partir de la plantilla pública:
 
-Extraer texto del PDF original:
-
-```bash
-python -m jobhunter_ai.cli parse-cv upload/CV_Gilberto_MoralesM.pdf
+```powershell
+Copy-Item data\profile.example.json data\profile.json
 ```
 
-Después de revisar la extracción, el perfil estructurado se guarda localmente
-en `data/profile.json`. Ese archivo no debe subirse a un repositorio público.
+Ejecuta la demostración con vacantes de ejemplo:
 
-Ejecutar el análisis de demostración:
-
-```bash
-python -m jobhunter_ai.cli run \\
-  --profile data/profile.json \\
-  --jobs data/sample_jobs.json \\
-  --preferences data/preferences.json \\
-  --output output \\
-  --threshold 60
+```powershell
+python -m jobhunter_ai.cli run --profile data/profile.json --jobs data/sample_jobs.json --preferences data/preferences.json --output output --threshold 60
 ```
 
-Archivos generados:
+Para extraer texto de un CV PDF local:
 
-- `output/alerts.json`: vacante, porcentaje, requisitos cumplidos/faltantes, evidencia y ruta del CV.
-- `output/cv_adaptado_<id>.md`: CV adaptado y legible por ATS.
-- `output/review_queue.md`: vacantes técnicas con tipo de empleo desconocido para revisión manual.
-- `data/preferences.json`: tipos de empleo permitidos y palabras excluidas.
+```powershell
+python -m jobhunter_ai.cli parse-cv ruta\a\mi_cv.pdf
+```
 
-Para aceptar otra modalidad, edita `allowed_employment_types`. Los valores
-soportados por el MVP son `internship`, `part-time`, `trainee`,
-`apprenticeship` y `student`. Si una vacante no declara modalidad, se descarta
-por seguridad mientras `allow_unknown_employment_type` sea `false`.
-Si esa vacante tiene título, empresa, URL válida y señales explícitas de TI, se
-añade también a `review_queue` dentro de `alerts.json` y al reporte Markdown.
-No pasa al matching ni genera CV o alerta compatible hasta que su modalidad se
-pueda clasificar. La cola exige modalidad y ubicación identificables: remoto se
-permite desde cualquier ubicación, mientras presencial o híbrido se limita a
-Monterrey y el área metropolitana de Nuevo León. Las señales explícitas de
-tiempo completo excluyen la vacante de la cola.
+Ejecuta las pruebas:
 
-Pruebas:
-
-```bash
+```powershell
 python -m unittest discover -s tests -v
 ```
 
-## Jobicy
+## Resultados
 
-JobHunter puede consultar la API pública de Jobicy mediante la configuración
-de `data/sources.example.json` y conservar el enlace original de cada vacante.
-La API no requiere API key. El sistema debe consultar Jobicy como máximo una
-vez por hora; este adaptador no implementa programación periódica ni caché.
+- `output/alerts.json`: vacante, puntuación, requisitos cumplidos/faltantes, evidencia y ruta del CV generado.
+- `output/cv_adaptado_<id>.md`: adaptación ATS que reorganiza y enfatiza información existente.
+- `output/review_queue.md`: vacantes que requieren verificar manualmente modalidad o tipo de empleo.
 
-## Alertas locales por correo
+## Privacidad y límites
 
-JobHunter puede convertir mensajes RFC 822 (`.eml`) exportados localmente en
-vacantes, sin conectarse a Gmail ni usar credenciales. Los correos reales deben
-guardarse únicamente en `data/email_alerts/`; esta carpeta es privada, está
-excluida de Git y nunca debe subirse al repositorio.
+Nunca subas a GitHub:
 
-```bash
-python -m jobhunter_ai.cli run \
-  --profile data/profile.json \
-  --email-alerts data/email_alerts/ \
-  --preferences data/preferences.json \
-  --output output
-```
+- `data/profile.json`
+- CVs PDF originales
+- `data/google_client_secret.json` y `data/gmail_token.json`
+- `data/jobhunter.db`
+- `data/email_alerts/`
+- `data/search_preferences.json`
+- contenido de `output/`
+- tokens, API keys o secretos de GitHub Actions
 
-También puede declararse dentro de una configuración `--sources` con
-`{"type": "email", "path": "ruta/a/alertas", "provider": "opcional"}`.
-La ruta puede ser una carpeta o un único archivo `.eml`. Si no se configura
-`provider`, se utiliza el dominio del remitente.
+El repositorio incluye solo plantillas y datos de demostración. Antes de postularse, una persona debe revisar tanto la vacante como el CV generado.
 
-## Gmail por etiqueta (solo lectura)
+## Integraciones disponibles
 
-`GmailLabelJobSource` puede leer únicamente los mensajes de una etiqueta de
-Gmail resuelta por nombre. Por defecto usa `JobHunter/Alertas`, solicita
-exclusivamente el scope `https://www.googleapis.com/auth/gmail.readonly` y no
-envía, elimina, archiva, marca como leído ni modifica mensajes.
+- **JSON, RSS/Atom y Jobicy:** adaptadores para datos normalizados y demostraciones.
+- **Correo local:** procesamiento de archivos `.eml` privados.
+- **Gmail por etiqueta:** lectura local con OAuth y scope `gmail.readonly`; el código limita la consulta a la etiqueta configurada y no modifica mensajes.
+- **Telegram/GitHub Actions:** existe un workflow remoto experimental para resultados temporales basados en Jobicy.
 
-```bash
-python -m jobhunter_ai.cli run \
-  --profile data/profile.json \
-  --gmail-token data/gmail_token.json \
-  --gmail-label JobHunter/Alertas \
-  --gmail-allowed-domain occ.example \
-  --gmail-allowed-domain indeed.example,linkedin.example \
-  --gmail-max-messages 50 \
-  --preferences data/preferences.json \
-  --output output
-```
+Estas integraciones no significan que el sistema tenga una búsqueda universal de todas las bolsas de empleo. La calidad final depende de que el proveedor incluya título, empresa, descripción, enlace real y tipo de empleo verificable.
 
-También puede usarse `data/sources.gmail.example.json` con `--sources`. Los
-dominios del ejemplo son sintéticos y deben reemplazarse localmente por los
-proveedores autorizados. El conector descarta cualquier otro dominio y no
-guarda el mensaje raw ni su HTML en archivos o logs.
+## Decisiones de integridad
 
-Antes del matching, las alertas de correo deben incluir título, empresa,
-descripción suficiente y una URL HTTP/HTTPS de vacante perteneciente a OCC,
-Indeed o LinkedIn. Los enlaces de demostración o sintéticos se rechazan. Una
-alerta incompleta queda registrada en los diagnósticos, pero no genera CV ni se
-incluye entre las alertas compatibles.
+- No agrega hechos que no aparezcan en el perfil derivado del CV.
+- Cada coincidencia conserva evidencia de la sección y texto fuente.
+- Una vacante sin tipo de empleo verificable no se acepta automáticamente.
+- Los enlaces de demostración o sintéticos se rechazan.
+- La postulación final siempre requiere aprobación humana.
 
-Los correos HTML tipo resumen pueden producir varias vacantes. Los enlaces
-repetidos de imagen, título y botón se agrupan por el identificador estable de
-la vacante, y cada tarjeta debe superar individualmente la misma compuerta de
-calidad antes de filtros y matching.
+## Roadmap posterior a v0.1.0
 
-### Autorización OAuth local
+- Conectores permitidos y fiables para fuentes reales de empleo.
+- Persistencia compartida para ejecuciones remotas.
+- Scheduler con límites, registros y reintentos.
+- Dashboard de revisión, edición y aprobación.
+- Alertas con fuentes de datos verificadas.
+- Apoyo de LLM validado estrictamente contra la evidencia del perfil.
+- Contenedores y despliegue de producción.
 
-Antes de usar el conector:
+## Para portafolio
 
-1. Crea o selecciona un proyecto en Google Cloud y habilita la Gmail API.
-2. Configura la pantalla de consentimiento OAuth. Si la aplicación está en modo
-   de prueba, añade únicamente las cuentas que deban autorizarla como usuarios
-   de prueba.
-3. En Google Auth Platform, crea un OAuth Client ID con tipo **Desktop app**.
-4. Descarga el JSON y guárdalo localmente como
-   `data/google_client_secret.json`.
+**JobHunter AI** demuestra diseño de pipelines en Python, modelos de datos, filtros configurables, matching explicable, generación responsable de documentos, privacidad de datos y pruebas automatizadas.
 
-Ejecuta una vez el siguiente comando. Se abrirá el navegador local para que el
-propietario de la cuenta otorgue el permiso:
-
-```bash
-python -m jobhunter_ai.cli authorize-gmail \
-  --client-secrets data/google_client_secret.json \
-  --token data/gmail_token.json
-```
-
-El flujo solicita exclusivamente
-`https://www.googleapis.com/auth/gmail.readonly`. Este scope concede permiso de
-lectura de Gmail; la limitación a `JobHunter/Alertas` es funcional y la aplica
-`GmailLabelJobSource`, que resuelve esa etiqueta y consulta mensajes usando solo
-su ID. El código no modifica los mensajes.
-
-`data/google_client_secret.json` y `data/gmail_token.json` contienen material
-privado. Ambos están excluidos de Git y nunca deben subirse a GitHub, copiarse a
-artifacts, compartirse ni imprimirse en logs.
-
-## Historial y deduplicación local
-
-La opción `--state-db` activa un historial SQLite local para evitar que una
-vacante cuya alerta ya fue confirmada vuelva a generar una alerta o un CV
-adaptado:
-
-```bash
-python -m jobhunter_ai.cli run \
-  --profile data/profile.json \
-  --sources data/sources.example.json \
-  --state-db data/jobhunter.db \
-  --output output
-```
-
-La base conserva únicamente hashes SHA-256 del identificador y del enlace,
-la fuente, fechas, estado y score. No almacena el texto de la vacante o del
-correo, el perfil ni el CV. Un cambio de fuente, identificador o enlace se
-considera una vacante nueva; los parámetros habituales de seguimiento del
-enlace no alteran su identidad. `data/jobhunter.db` está excluido de Git.
-
-SQLite es persistencia exclusivamente local. El pipeline deja las coincidencias
-en estado `compatible`; un canal de alertas debe confirmar el envío mediante la
-operación explícita del almacenamiento antes de cambiarlo a `alertado`. Mientras
-esa confirmación no exista, la vacante puede volver a procesarse. Esta base aún
-no se conserva entre ejecuciones independientes de GitHub Actions.
-
-## Ejecución remota con GitHub Actions
-
-El workflow `Remote Job Search` puede ejecutarse manualmente o cada seis horas.
-Usa Jobicy mediante `data/sources.example.json`, genera los resultados de forma
-temporal y envía por Telegram las vacantes compatibles junto con su CV adaptado.
-`profile.json`, el PDF y `output/` no se publican como artifacts y se eliminan al
-terminar la ejecución.
-
-Configura estos tres secretos obligatorios del repositorio en **Settings > Secrets and
-variables > Actions**:
-
-- `PROFILE_JSON`: contenido completo del perfil local `data/profile.json`.
-- `TELEGRAM_BOT_TOKEN`: token del bot de Telegram.
-- `TELEGRAM_CHAT_ID`: identificador del chat que recibirá las alertas.
-
-Opcionalmente, configura `SEARCH_PREFERENCES_JSON` con el contenido de tus
-preferencias avanzadas. Durante la ejecución se guarda temporalmente con
-permisos restrictivos y se elimina siempre al finalizar. Si el secreto no está
-configurado, el workflow conserva `data/preferences.json` como configuración.
-
-No guardes los valores en el repositorio ni los incluyas en archivos de workflow.
-
-## Reglas de integridad
-
-- No se agregan habilidades, experiencia, estudios o certificaciones que no estén en el perfil derivado del CV.
-- La adaptación cambia orden, selección y énfasis; no cambia los hechos.
-- Cada coincidencia relevante conserva una referencia a sección y texto fuente.
-- Una persona debe revisar el resultado final antes de enviarlo a una vacante.
-
-## Evolución propuesta
-
-- `sources/`: adaptadores para APIs, RSS o exportaciones permitidas por cada bolsa de trabajo.
-- `storage/`: SQLite para historial, deduplicación y estado de postulaciones.
-- `alerts/`: correo, Telegram o una interfaz web.
-- `llm/`: extracción y redacción asistida con validación contra claims/evidencias.
-- `scheduler/`: ejecución periódica con límites, logs y reintentos.
-- `web/`: dashboard para revisar, editar y aprobar CVs antes de postular.
