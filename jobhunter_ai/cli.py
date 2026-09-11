@@ -119,6 +119,7 @@ def main() -> None:
     print(f"Vacantes nuevas: {report['new_jobs']}")
     print(f"Vacantes vistas anteriormente: {report['previously_seen_jobs']}")
     print(f"Vacantes descartadas por filtros: {report['filtered_out_jobs']}")
+    print(f"Vacantes en cola de revisión manual: {report['review_queue_jobs']}")
     print(f"Vacantes compatibles: {report['compatible_jobs']}")
     diagnostics = report["diagnostics"]
     print(f"Descartadas por tipo de empleo: {diagnostics['discarded_by_employment_type']}")
@@ -143,6 +144,7 @@ def main() -> None:
             f"{example['employment_type']} — {example['reason']}"
         )
     print(f"Reporte: {Path(args.output) / 'alerts.json'}")
+    print(f"Cola de revisión: {Path(args.output) / 'review_queue.md'}")
 
 
 if __name__ == "__main__":

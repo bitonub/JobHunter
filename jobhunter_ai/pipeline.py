@@ -11,6 +11,7 @@ from .job_quality import evaluate_email_job_quality
 from .matcher import match_job
 from .models import Profile
 from .diagnostics import build_diagnostic_summary
+from .review_queue import build_review_entry, load_review_terms, write_review_queue
 from .sources import JobSource
 from .storage import JobStateStatus, JobStateStore
 from .tailor import build_tailored_cv
@@ -37,6 +38,8 @@ def run_pipeline(
 
     alerts = []
     filtered_out = []
+    review_queue = []
+    review_terms = None
     new_jobs = 0
     previously_seen_jobs = 0
     skipped_alerted_jobs = 0
@@ -72,8 +75,19 @@ def run_pipeline(
         filter_result = evaluate_job(job, preferences)
         if not filter_result.accepted:
             filtered_out.append({"job": asdict(job), "filter": filter_result.to_dict()})
+            if filter_result.employment_type == "unknown":
+                if review_terms is None:
+                    review_terms = load_review_terms(preferences, job_terms_path)
+                review_entry = build_review_entry(job, filter_result, review_terms)
+            else:
+                review_entry = None
+            if review_entry is not None:
+                review_queue.append(review_entry)
             if state_store is not None:
-                state_store.record(job, JobStateStatus.DISCARDED)
+                state_store.record(
+                    job,
+                    JobStateStatus.REVIEWABLE if review_entry else JobStateStatus.DISCARDED,
+                )
             continue
         result = match_job(profile, job, threshold=threshold)
         record = {
@@ -105,10 +119,13 @@ def run_pipeline(
         "eligible_jobs": len(alerts),
         "compatible_jobs": sum(item["analysis"]["compatible"] for item in alerts),
         "filtered_out_jobs": len(filtered_out),
+        "review_queue_jobs": len(review_queue),
         "diagnostics": build_diagnostic_summary(filtered_out, alerts, threshold),
         "preferences": preferences,
         "alerts": alerts,
+        "review_queue": review_queue,
         "filtered_out": filtered_out,
     }
     write_json(output / "alerts.json", report)
+    write_review_queue(output / "review_queue.md", review_queue)
     return report
