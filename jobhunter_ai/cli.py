@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from .cv_parser import extract_text_from_pdf
+from .gmail_oauth import GmailAuthorizationError, authorize_gmail
 from .pipeline import run_pipeline
 from .sources import (
     EmailAlertJobSource,
@@ -22,6 +23,21 @@ def build_parser() -> argparse.ArgumentParser:
     parse_cv = subparsers.add_parser("parse-cv", help="Extrae el texto de un CV PDF")
     parse_cv.add_argument("pdf")
     parse_cv.add_argument("--output", default="output/cv_extraido.txt")
+
+    authorize = subparsers.add_parser(
+        "authorize-gmail",
+        help="Autoriza Gmail localmente y crea un token OAuth privado",
+    )
+    authorize.add_argument(
+        "--client-secrets",
+        required=True,
+        help="OAuth Client ID de escritorio descargado desde Google Cloud",
+    )
+    authorize.add_argument(
+        "--token",
+        required=True,
+        help="Ruta privada donde se guardará el token OAuth",
+    )
 
     run = subparsers.add_parser("run", help="Analiza vacantes y genera CVs adaptados")
     run.add_argument("--profile", required=True, help="Perfil estructurado derivado del CV")
@@ -52,13 +68,22 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    args = build_parser().parse_args()
+    parser = build_parser()
+    args = parser.parse_args()
     if args.command == "parse-cv":
         text = extract_text_from_pdf(args.pdf)
         destination = Path(args.output)
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(text, encoding="utf-8")
         print(f"Texto extraído en: {destination}")
+        return
+
+    if args.command == "authorize-gmail":
+        try:
+            destination = authorize_gmail(args.client_secrets, args.token)
+        except (FileNotFoundError, GmailAuthorizationError) as error:
+            parser.error(str(error))
+        print(f"Autorización de Gmail completada. Token guardado en: {destination}")
         return
 
     if args.sources:
