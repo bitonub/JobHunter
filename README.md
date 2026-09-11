@@ -134,10 +134,36 @@ dominios del ejemplo son sintéticos y deben reemplazarse localmente por los
 proveedores autorizados. El conector descarta cualquier otro dominio y no
 guarda el mensaje raw ni su HTML en archivos o logs.
 
-El siguiente paso será realizar una autorización OAuth única con una aplicación
-de escritorio configurada en Google Cloud. Esta entrega no implementa ese flujo:
-solo lee un token local ya autorizado. `data/gmail_token.json` está excluido de
-Git y nunca debe subirse al repositorio, copiarse a artifacts ni imprimirse.
+### Autorización OAuth local
+
+Antes de usar el conector:
+
+1. Crea o selecciona un proyecto en Google Cloud y habilita la Gmail API.
+2. Configura la pantalla de consentimiento OAuth. Si la aplicación está en modo
+   de prueba, añade únicamente las cuentas que deban autorizarla como usuarios
+   de prueba.
+3. En Google Auth Platform, crea un OAuth Client ID con tipo **Desktop app**.
+4. Descarga el JSON y guárdalo localmente como
+   `data/google_client_secret.json`.
+
+Ejecuta una vez el siguiente comando. Se abrirá el navegador local para que el
+propietario de la cuenta otorgue el permiso:
+
+```bash
+python -m jobhunter_ai.cli authorize-gmail \
+  --client-secrets data/google_client_secret.json \
+  --token data/gmail_token.json
+```
+
+El flujo solicita exclusivamente
+`https://www.googleapis.com/auth/gmail.readonly`. Este scope concede permiso de
+lectura de Gmail; la limitación a `JobHunter/Alertas` es funcional y la aplica
+`GmailLabelJobSource`, que resuelve esa etiqueta y consulta mensajes usando solo
+su ID. El código no modifica los mensajes.
+
+`data/google_client_secret.json` y `data/gmail_token.json` contienen material
+privado. Ambos están excluidos de Git y nunca deben subirse a GitHub, copiarse a
+artifacts, compartirse ni imprimirse en logs.
 
 ## Historial y deduplicación local
 
