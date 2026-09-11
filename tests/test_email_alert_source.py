@@ -21,7 +21,37 @@ class EmailAlertJobSourceTests(unittest.TestCase):
         }
 
     def test_reads_all_eml_files_from_folder(self):
-        self.assertEqual(len(self.jobs), 5)
+        self.assertEqual(len(self.jobs), 7)
+
+    def test_extracts_multiple_jobs_from_synthetic_digest(self):
+        jobs = EmailAlertJobSource(FIXTURE_DIR / "linkedin_digest.eml").fetch_jobs()
+
+        self.assertEqual(len(jobs), 2)
+        self.assertEqual(
+            [job.title for job in jobs],
+            ["Security Intern", "Technical Support Trainee"],
+        )
+        self.assertEqual(
+            [job.company for job in jobs],
+            ["Northstar Security Lab", "Contoso Support Lab"],
+        )
+        self.assertEqual(
+            [job.location for job in jobs],
+            ["Monterrey, Nuevo León", "Remote"],
+        )
+        self.assertEqual(
+            [job.url for job in jobs],
+            [
+                "https://www.linkedin.com/jobs/view/2000000001",
+                "https://www.linkedin.com/jobs/view/2000000002",
+            ],
+        )
+        self.assertEqual(
+            [job.employment_type for job in jobs],
+            ["internship", "part-time"],
+        )
+        self.assertTrue(all(job.description for job in jobs))
+        self.assertEqual(len({job.id for job in jobs}), 2)
 
     def test_extracts_plain_text_occ_alert(self):
         job = self.jobs["occ-alert-001@occ.example"]
@@ -146,6 +176,25 @@ class EmailAlertJobSourceTests(unittest.TestCase):
         self.assertEqual(report["alerts"][0]["job"]["source"], "occ.example")
         self.assertEqual(report["alerts"][0]["job"]["sender"], "alerts@occ.example")
         self.assertIn("Python", report["alerts"][0]["job"]["required_skills"])
+
+    def test_pipeline_processes_each_synthetic_digest_card(self):
+        source = EmailAlertJobSource(FIXTURE_DIR / "linkedin_digest.eml")
+        with tempfile.TemporaryDirectory() as output:
+            report = run_pipeline(
+                "data/profile.example.json",
+                source,
+                output,
+                preferences_path="data/preferences.json",
+                job_terms_path="data/job_terms.json",
+            )
+
+        self.assertEqual(report["total_jobs"], 2)
+        self.assertEqual(report["eligible_jobs"], 2)
+        self.assertEqual(report["compatible_jobs"], 2)
+        self.assertEqual(
+            [alert["job"]["title"] for alert in report["alerts"]],
+            ["Security Intern", "Technical Support Trainee"],
+        )
 
     def test_pipeline_rejects_synthetic_link_before_matching_or_cv(self):
         source = EmailAlertJobSource(FIXTURE_DIR / "synthetic_link.eml")

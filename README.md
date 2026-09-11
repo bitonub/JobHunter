@@ -140,6 +140,11 @@ Indeed o LinkedIn. Los enlaces de demostración o sintéticos se rechazan. Una
 alerta incompleta queda registrada en los diagnósticos, pero no genera CV ni se
 incluye entre las alertas compatibles.
 
+Los correos HTML tipo resumen pueden producir varias vacantes. Los enlaces
+repetidos de imagen, título y botón se agrupan por el identificador estable de
+la vacante, y cada tarjeta debe superar individualmente la misma compuerta de
+calidad antes de filtros y matching.
+
 ### Autorización OAuth local
 
 Antes de usar el conector:

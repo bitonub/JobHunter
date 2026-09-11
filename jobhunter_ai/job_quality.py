@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import asdict, dataclass
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit, urlunsplit
 
 from .models import Job
 
@@ -114,6 +114,50 @@ def select_application_url(links: list[str], source: str, sender: str = "") -> s
     return next(
         (link for link in links if application_url_issue(link, provider) is None),
         "",
+    )
+
+
+def application_url_key(value: str, provider: str) -> str:
+    if application_url_issue(value, provider) is not None:
+        return ""
+    parsed = urlsplit(value)
+    path = unquote(parsed.path)
+    if provider == "linkedin":
+        match = re.search(r"/(?:comm/)?jobs/view/(\d+)", path, re.IGNORECASE)
+        return f"linkedin:{match.group(1)}" if match else ""
+    if provider == "indeed":
+        job_key = (parse_qs(parsed.query).get("jk") or [""])[0]
+        return f"indeed:{job_key}" if job_key else urlunsplit(("", parsed.netloc, path, "", ""))
+    if provider == "occ":
+        return f"occ:{path.rstrip('/').lower()}"
+    return ""
+
+
+def canonical_application_url(value: str, provider: str) -> str:
+    key = application_url_key(value, provider)
+    if not key:
+        return ""
+    parsed = urlsplit(value)
+    if provider == "linkedin":
+        return f"https://www.linkedin.com/jobs/view/{key.removeprefix('linkedin:')}"
+    if provider == "indeed" and key.startswith("indeed:"):
+        return urlunsplit(
+            (
+                parsed.scheme.lower(),
+                parsed.netloc.lower(),
+                parsed.path,
+                f"jk={key.removeprefix('indeed:')}",
+                "",
+            )
+        )
+    return urlunsplit(
+        (
+            parsed.scheme.lower(),
+            parsed.netloc.lower(),
+            parsed.path,
+            "",
+            "",
+        )
     )
 
 
